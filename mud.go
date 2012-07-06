@@ -25,8 +25,23 @@ import ("fmt"
  * - NPCs
  */
 
-type Stimulus struct {
-	name string
+type Perceiver interface {
+	DoesPerceive(s Stimulus) bool
+}
+
+type Stimulus interface {
+	StimType() string
+	Description(p Perceiver) string
+}
+
+type PlayerEnterStimulus struct {
+	Stimulus
+	player *Player
+}
+
+type PlayerLeaveStimulus struct {
+	Stimulus
+	player *Player
 }
 
 type RoomID int
@@ -52,6 +67,7 @@ func (b Ball) Description() string { return "A red ball." }
 func (b Ball) Carryable() bool { return true }
 
 type Player struct {
+	Perceiver
 	id int
 	room RoomID
 	name string
@@ -93,10 +109,10 @@ func main() {
 			conn, aerr := listener.Accept()
 			if aerr == nil {
 				newP := AcceptConnAsPlayer(conn, idGen)
-				newP.room = theRoom.id
-				theRoom.players = append(theRoom.players, *newP)
-				theRoom.stimuliBroadcast <- Stimulus{name: "Entered"}
 				playerList[newP.id] = newP
+
+				PlacePlayerInRoom(theRoom, newP)
+
 				fmt.Println(newP.name, "joined, ID =",newP.id)
 				fmt.Println(len(playerList), "player[s] online.")
 
@@ -112,14 +128,24 @@ func main() {
 	}
 }
 
+func PlacePlayerInRoom(r *Room, p *Player) {
+	oldRoomID := p.room
+	if oldRoomID != -1 {
+		oldRoom := roomList[oldRoomID]
+		oldRoom.stimuliBroadcast <- 
+			PlayerLeaveStimulus{player: p}
+	}
+	
+	p.room = r.id
+	r.stimuliBroadcast <- PlayerEnterStimulus{player: p}
+	r.players = append(r.players, *p)
+}
+
 func UniqueIDGen() func() int {
 	x, xchan := 0, make(chan int)
 
 	go func() {
-		for {
-			x += 1
-			xchan <- x
-		}
+		for ; ; x += 1 { xchan <- x }
 	}()
 
 	return func() int { return <- xchan }
@@ -150,17 +176,15 @@ func (p *Player) ExecCommandLoop() {
 			if nextCommandRoot == "who" { p.Who(nextCommandArgs) }
 			if nextCommandRoot == "look" { p.Look(nextCommandArgs) }
 		}
-		p.sock.Write([]byte("> "))
+		p.WriteString("> ")
 	}
 }
 
 func (r *Room) FanOutBroadcasts() {
 	for {
 		broadcast := <- r.stimuliBroadcast
-		fmt.Println("Fanning",broadcast)
-		for _,p := range r.players {
-			fmt.Println("Fanning",broadcast,"to",p.name)
-			p.stimuli <- broadcast
+		for _,p := range r.players { 
+			p.stimuli <- broadcast 
 		}
 	}
 }
@@ -168,9 +192,9 @@ func (r *Room) FanOutBroadcasts() {
 func (p *Player) Look(args []string) {
 	if len(args) > 1 {
 		fmt.Println("Too many args")
-		p.sock.Write([]byte("Too many args"))
+		p.WriteString("Too many args")
 	} else {
-		p.sock.Write([]byte(roomList[p.room].Describe(p) + "\n"))
+		p.WriteString(roomList[p.room].Describe(p) + "\n")
 	}
 }
 
@@ -179,13 +203,13 @@ func (p *Player) Who(args []string) {
 	for id, pOther := range playerList {
 		if id != p.id {
 			str_who := fmt.Sprintf("[WHO] %s\n",pOther.name)
-			p.sock.Write([]byte(str_who))
+			p.WriteString(str_who)
 			gotOne = true
 		}
 	}
 
 	if !gotOne {
-		p.sock.Write([]byte("You are all alone in the world.\n"))
+		p.WriteString("You are all alone in the world.\n")
 	}
 }
 
@@ -207,15 +231,22 @@ func (p *Player) ReadLoop(playerRemoveChan chan *Player) {
 func (p *Player) StimuliLoop() {
 	for {
 		nextStimulus := <- p.stimuli
-		fmt.Println(p.name,"receiving stimulus",nextStimulus.name)
+		if p.DoesPerceive(nextStimulus) {
+			p.WriteString(nextStimulus.Description(p))
+		}
+		fmt.Println(p.name,"receiving stimulus",nextStimulus.StimType())
 	}
 }
 
 func (p *Player) HeartbeatLoop() {
 	for {
-		p.sock.Write([]byte("Heartbeat\n"))
+		p.WriteString("Heartbeat\n")
 		time.Sleep(5*time.Second)
 	}
+}
+
+func (p *Player) WriteString(str string) {
+	p.sock.Write([]byte(str))
 }
 
 func Divider() string { 
@@ -252,6 +283,32 @@ func (r *Room) DescribePlayers(toPlayer *Player) string {
 	return objTextBuf
 }
 
+func (s PlayerEnterStimulus) StimType() string { return "enter" }
+func (s PlayerEnterStimulus) Description(p Perceiver) string {
+	return s.player.name + " has entered the room.\n"
+}
+
+func (s PlayerLeaveStimulus) StimType() string { return "exit" }
+func (s PlayerLeaveStimulus) Description(p Perceiver) string {
+	return s.player.name + " has left the room.\n"
+}
+
+func (p Player) DoesPerceive(s Stimulus) bool {
+	switch s.(type) {
+	case PlayerEnterStimulus: return p.DoesPerceiveEnter(s.(PlayerEnterStimulus))
+        case PlayerLeaveStimulus: return p.DoesPerceiveExit(s.(PlayerLeaveStimulus))
+	}
+	return false
+}
+
+func (p Player) DoesPerceiveEnter(s PlayerEnterStimulus) bool {
+	return !(s.player.id == p.id)
+}
+
+func (p Player) DoesPerceiveExit(s PlayerLeaveStimulus) bool {
+	return !(s.player.id == p.id)
+}
+
 func AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Player {
 	// Make distinct unique names randomly
 	colors := []string{"Red", "Blue", "Yellow"}
@@ -264,5 +321,6 @@ func AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Player {
 	p.sock = conn
 	p.commandBuf = make(chan string, 10)
 	p.stimuli = make(chan Stimulus, 5)
+	p.room = -1
 	return p
 }
