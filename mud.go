@@ -7,6 +7,7 @@ import ("fmt"
 	"io"
 	"strings"
 	"regexp"
+	"bytes"
 )
 
 /*
@@ -42,6 +43,12 @@ type PlayerEnterStimulus struct {
 type PlayerLeaveStimulus struct {
 	Stimulus
 	player *Player
+}
+
+type PlayerSayStimulus struct {
+	Stimulus
+	player *Player
+	text string
 }
 
 type RoomID int
@@ -175,6 +182,7 @@ func (p *Player) ExecCommandLoop() {
 			fmt.Println("args:",nextCommandArgs)
 			if nextCommandRoot == "who" { p.Who(nextCommandArgs) }
 			if nextCommandRoot == "look" { p.Look(nextCommandArgs) }
+			if nextCommandRoot == "say" { p.Say(nextCommandArgs) }
 		}
 		p.WriteString("> ")
 	}
@@ -211,6 +219,21 @@ func (p *Player) Who(args []string) {
 	if !gotOne {
 		p.WriteString("You are all alone in the world.\n")
 	}
+}
+
+func JoinStr(args []string) string {
+	buffer := bytes.NewBufferString("")
+	for _,s := range(args) {
+		fmt.Fprint(buffer, s)
+		fmt.Fprint(buffer, " ")
+	}
+	return strings.TrimRight(string(buffer.Bytes()), " ")
+}
+
+func (p *Player) Say(args []string) {
+	room := roomList[p.room]
+	sayStim := PlayerSayStimulus{player: p, text: JoinStr(args)}
+	room.stimuliBroadcast <- sayStim
 }
 
 func (p *Player) ReadLoop(playerRemoveChan chan *Player) {
@@ -293,10 +316,23 @@ func (s PlayerLeaveStimulus) Description(p Perceiver) string {
 	return s.player.name + " has left the room.\n"
 }
 
+func (s PlayerSayStimulus) StimType() string { return "say" }
+func (s PlayerSayStimulus) Description(p Perceiver) string {
+	playerReceiver, ok := p.(*Player)
+	fmt.Println("playerReceiver, ok =",playerReceiver,ok)
+	if ok && s.player.id == playerReceiver.id {
+		return "You say \"" + s.text + "\"\n"
+	} else {
+		return s.player.name + " said " + "\"" + s.text + "\".\n"
+	}
+	return "ERROR IN SAY"
+}
+
 func (p Player) DoesPerceive(s Stimulus) bool {
 	switch s.(type) {
 	case PlayerEnterStimulus: return p.DoesPerceiveEnter(s.(PlayerEnterStimulus))
         case PlayerLeaveStimulus: return p.DoesPerceiveExit(s.(PlayerLeaveStimulus))
+	case PlayerSayStimulus: return true
 	}
 	return false
 }
