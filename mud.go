@@ -26,7 +26,7 @@ import ("fmt"
  */
 
 type Stimulus struct {
-	text string
+	name string
 }
 
 type RoomID int
@@ -36,6 +36,7 @@ type Room struct {
 	text string
 	players []Player
 	physObjects []PhysicalObject
+	stimuliBroadcast chan Stimulus
 }
 
 type PhysicalObject interface {
@@ -62,6 +63,16 @@ type Player struct {
 var playerList map[int]*Player
 var roomList map[RoomID]*Room
 
+func MakeStupidRoom() *Room {
+	room := Room{id: 1}
+	room.text = "You are in a bedroom."
+	room.stimuliBroadcast = make(chan Stimulus, 10)
+	theBall := Ball{}
+	room.physObjects = []PhysicalObject {theBall}
+	go room.FanOutBroadcasts()
+	return &room
+}
+
 func main() {
 	rand.Seed(time.Now().Unix())
 	listener, err := net.Listen("tcp", ":3000")
@@ -69,10 +80,9 @@ func main() {
 	playerList = make(map[int]*Player)
 	roomList = make(map[RoomID]*Room)
 	idGen := UniqueIDGen()
-	theBall := Ball{}
-	theRoom := Room{id: 1, text:"You are in a bedroom."}
-	theRoom.physObjects = []PhysicalObject {theBall}
-	roomList[theRoom.id] = &theRoom
+	theRoom := MakeStupidRoom()
+
+	roomList[theRoom.id] = theRoom
 
 	if err == nil {
 		go PlayerListManager(playerRemoveChan, playerList)
@@ -85,13 +95,14 @@ func main() {
 				newP := AcceptConnAsPlayer(conn, idGen)
 				newP.room = theRoom.id
 				theRoom.players = append(theRoom.players, *newP)
+				theRoom.stimuliBroadcast <- Stimulus{name: "Entered"}
 				playerList[newP.id] = newP
 				fmt.Println(newP.name, "joined, ID =",newP.id)
 				fmt.Println(len(playerList), "player[s] online.")
 
-				//go newP.HeartbeatLoop()
 				go newP.ReadLoop(playerRemoveChan)
 				go newP.ExecCommandLoop()
+				go newP.StimuliLoop()
 			} else {
 				fmt.Println("Error in accept")
 			}
@@ -111,9 +122,7 @@ func UniqueIDGen() func() int {
 		}
 	}()
 
-	return func() int {
-		return <- xchan
-	}
+	return func() int { return <- xchan }
 }
 
 func PlayerListManager(toRemove chan *Player, pList map[int]*Player) {
@@ -140,6 +149,18 @@ func (p *Player) ExecCommandLoop() {
 			fmt.Println("args:",nextCommandArgs)
 			if nextCommandRoot == "who" { p.Who(nextCommandArgs) }
 			if nextCommandRoot == "look" { p.Look(nextCommandArgs) }
+		}
+		p.sock.Write([]byte("> "))
+	}
+}
+
+func (r *Room) FanOutBroadcasts() {
+	for {
+		broadcast := <- r.stimuliBroadcast
+		fmt.Println("Fanning",broadcast)
+		for _,p := range r.players {
+			fmt.Println("Fanning",broadcast,"to",p.name)
+			p.stimuli <- broadcast
 		}
 	}
 }
@@ -180,6 +201,13 @@ func (p *Player) ReadLoop(playerRemoveChan chan *Player) {
 			playerRemoveChan <- p
 			return
 		}
+	}
+}
+
+func (p *Player) StimuliLoop() {
+	for {
+		nextStimulus := <- p.stimuli
+		fmt.Println(p.name,"receiving stimulus",nextStimulus.name)
 	}
 }
 
@@ -232,8 +260,9 @@ func AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Player {
 	animal := animals[rand.Intn(3)]
 	p := new(Player)
 	p.id = idSource()
-	p.name = (color + " " + animal)
+	p.name = (color + animal)
 	p.sock = conn
 	p.commandBuf = make(chan string, 10)
+	p.stimuli = make(chan Stimulus, 5)
 	return p
 }
