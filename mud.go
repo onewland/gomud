@@ -6,7 +6,6 @@ import ("fmt"
 	"time"
 	"io"
 	"strings"
-	"sync"
 	"regexp"
 )
 
@@ -25,6 +24,10 @@ import ("fmt"
  * - Combat
  * - NPCs
  */
+
+type Stimulus struct {
+	text string
+}
 
 type RoomID int
 
@@ -53,6 +56,7 @@ type Player struct {
 	name string
 	sock net.Conn
 	commandBuf chan string
+	stimuli chan Stimulus
 }
 
 var playerList map[int]*Player
@@ -98,14 +102,17 @@ func main() {
 }
 
 func UniqueIDGen() func() int {
-	x := 0
-	m := new(sync.Mutex)
+	x, xchan := 0, make(chan int)
+
+	go func() {
+		for {
+			x += 1
+			xchan <- x
+		}
+	}()
+
 	return func() int {
-		m.Lock()
-		x += 1
-		return_x := x
-		m.Unlock()
-		return return_x
+		return <- xchan
 	}
 }
 
