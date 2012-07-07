@@ -25,8 +25,11 @@ import ("fmt"
  * - NPCs
  */
 
+type PerceiveMap map[string]PhysicalObject
+
 type Perceiver interface {
 	DoesPerceive(s Stimulus) bool
+	PerceiveList() PerceiveMap
 }
 
 type Stimulus interface {
@@ -50,6 +53,12 @@ type PlayerSayStimulus struct {
 	text string
 }
 
+type PlayerPickupStimulus struct {
+	Stimulus
+	player *Player
+	obj PhysicalObject
+}
+
 type RoomID int
 
 type Room struct {
@@ -64,23 +73,32 @@ type PhysicalObject interface {
 	Visible() bool
 	Description() string
 	Carryable() bool
+	TextHandles() []string
 }
 
 type Ball struct { PhysicalObject }
 
 func (b Ball) Visible() bool { return true }
-func (b Ball) Description() string { return "A red ball." }
+func (b Ball) Description() string { return "A red ball" }
 func (b Ball) Carryable() bool { return true }
+func (b Ball) TextHandles() []string { return []string{"ball","red ball"} }
 
 type Player struct {
 	Perceiver
+	PhysicalObject
 	id int
 	room RoomID
 	name string
 	sock net.Conn
+	inventory []PhysicalObject
 	commandBuf chan string
 	stimuli chan Stimulus
 }
+
+func (p Player) Visible() bool { return true }
+func (p Player) Description() string { return "A person: " + p.name }
+func (p Player) Carryable() bool { return false }
+func (p Player) TextHandles() []string { return []string{ strings.ToLower(p.name) } }
 
 var playerList map[int]*Player
 var roomList map[RoomID]*Room
@@ -179,10 +197,15 @@ func (p *Player) ExecCommandLoop() {
 			nextCommandArgs := nextCommandSplit[1:]
 			fmt.Println("Next command from",p.name,":",nextCommandRoot)
 			fmt.Println("args:",nextCommandArgs)
-			if nextCommandRoot == "who" { p.Who(nextCommandArgs) }
-			else if nextCommandRoot == "look" { p.Look(nextCommandArgs) }
-			else if nextCommandRoot == "say" { p.Say(nextCommandArgs) }
-			else if nextCommandArgs == "take" { p.Take(nextCommandArgs) }
+			if nextCommandRoot == "who" {
+				p.Who(nextCommandArgs) 
+			} else if nextCommandRoot == "look" {
+				p.Look(nextCommandArgs) 
+			} else if nextCommandRoot == "say" {
+				p.Say(nextCommandArgs) 
+			} else if nextCommandRoot == "take" {
+				p.Take(nextCommandArgs) 
+			}
 		}
 		p.WriteString("> ")
 	}
@@ -225,6 +248,26 @@ func (p *Player) Say(args []string) {
 	room := roomList[p.room]
 	sayStim := PlayerSayStimulus{player: p, text: strings.Join(args," ")}
 	room.stimuliBroadcast <- sayStim
+}
+
+func (p *Player) Take(args []string) {
+	room := roomList[p.room]
+	if len(args) > 0 {
+		target := strings.ToLower(args[0])
+
+		if targetObj, ok := p.PerceiveList()[target]; ok {
+			if targetObj.Carryable() {
+				room.stimuliBroadcast <- PlayerPickupStimulus{player: p, obj: targetObj}
+				p.WriteString("Should take " + target + " [carryable].\n")
+			} else {
+				p.WriteString("Should not take " + target + " [not carryable].\n")
+			}
+		} else {
+			p.WriteString(target + " not seen.\n")
+		}
+	} else {
+		p.WriteString("Take objects by typing 'take [object name]'.\n")
+	}
 }
 
 func (p *Player) ReadLoop(playerRemoveChan chan *Player) {
@@ -312,10 +355,17 @@ func (s PlayerSayStimulus) Description(p Perceiver) string {
 	playerReceiver, ok := p.(*Player)
 	if ok && s.player.id == playerReceiver.id {
 		return "You say \"" + s.text + "\"\n"
-	} else {
-		return s.player.name + " said " + "\"" + s.text + "\".\n"
+	} 
+	return s.player.name + " said " + "\"" + s.text + "\".\n"
+}
+
+func (s PlayerPickupStimulus) StimType() string { return "take" }
+func (s PlayerPickupStimulus) Description(p Perceiver) string {
+	playerReceiver, ok := p.(*Player)
+	if ok && s.player.id == playerReceiver.id {
+		return "You took " + s.obj.Description() + "\n"
 	}
-	return "ERROR IN SAY"
+	return s.player.name + " took " + s.obj.Description() + ".\n"
 }
 
 func (p Player) DoesPerceive(s Stimulus) bool {
@@ -323,8 +373,39 @@ func (p Player) DoesPerceive(s Stimulus) bool {
 	case PlayerEnterStimulus: return p.DoesPerceiveEnter(s.(PlayerEnterStimulus))
         case PlayerLeaveStimulus: return p.DoesPerceiveExit(s.(PlayerLeaveStimulus))
 	case PlayerSayStimulus: return true
+	case PlayerPickupStimulus: return true
 	}
 	return false
+}
+
+// Would love to do away with this hack
+func DemoteToPhysObjList(ps []Player) []PhysicalObject {
+	physObjs := make([]PhysicalObject, len(ps))
+	for idx, p := range(ps) { physObjs[idx] = p }
+	return physObjs
+}
+
+func (p Player) PerceiveList() PerceiveMap {
+	// Right now, perceive people in the room, objects in the room,
+	// and objects in the player's inventory
+	var targetList []PhysicalObject
+	physObjects := make(PerceiveMap)
+	room := roomList[p.room]
+	people := room.players
+	roomObjects := room.physObjects
+	invObjects := p.inventory
+	targetList = append(DemoteToPhysObjList(people), roomObjects...)
+	targetList = append(targetList, invObjects...)
+
+	for _,target := range(targetList) {
+		if target.Visible() {
+			for _,handle := range(target.TextHandles()) {
+				physObjects[handle] = target
+			}
+		}
+	}
+
+	return physObjects
 }
 
 func (p Player) DoesPerceiveEnter(s PlayerEnterStimulus) bool {
