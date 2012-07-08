@@ -60,14 +60,43 @@ type PlayerPickupStimulus struct {
 }
 
 type RoomID int
+type RoomSide int
+const (
+	SideA RoomSide = iota
+	SideB
+)
+
+type RoomExitInfo struct {
+	exit RoomConnection
+	exitSide RoomSide
+}
 
 type Room struct {
 	id RoomID
 	text string
 	players []Player
 	physObjects []PhysicalObject
+	exits []RoomExitInfo
 	stimuliBroadcast chan Stimulus
 }
+
+type RoomConnection interface {
+	RoomA() *Room
+	RoomB() *Room
+	AExitName() string
+	BExitName() string
+}
+
+type EastWestRoomConnection struct {
+	RoomConnection
+	roomA *Room
+	roomB *Room
+}
+
+func (rc EastWestRoomConnection) RoomA() *Room { return rc.roomA }
+func (rc EastWestRoomConnection) RoomB() *Room { return rc.roomB }
+func (rc EastWestRoomConnection) AExitName() string { return "east" }
+func (rc EastWestRoomConnection) BExitName() string { return "west" }
 
 type PhysicalObject interface {
 	Visible() bool
@@ -103,13 +132,33 @@ func (p Player) TextHandles() []string { return []string{ strings.ToLower(p.name
 var playerList map[int]*Player
 var roomList map[RoomID]*Room
 
+// 'a' side will be west of 'b' side
+func ConnectEastWest(a *Room, b *Room) *EastWestRoomConnection {
+	roomConn := EastWestRoomConnection{roomA: a, roomB: b}
+	reiA := RoomExitInfo{exitSide: SideA, exit: roomConn}
+	reiB := RoomExitInfo{exitSide: SideB, exit: roomConn}
+	a.exits = append(a.exits, reiA)
+	b.exits = append(b.exits, reiB)
+	return &roomConn
+}
+
 func MakeStupidRoom() *Room {
-	room := Room{id: 1}
-	room.text = "You are in a bedroom."
+	room := Room{id: 1, text: "You are in a bedroom." }
+	room2 := Room{id: 2, text: "You are in a bathroom." }
+
 	room.stimuliBroadcast = make(chan Stimulus, 10)
+	room2.stimuliBroadcast = make(chan Stimulus, 10)
+
+	ConnectEastWest(&room, &room2)
 	theBall := Ball{}
 	room.physObjects = []PhysicalObject {theBall}
+
+	roomList[room.id] = &room
+	roomList[room2.id] = &room2
+
 	go room.FanOutBroadcasts()
+	go room2.FanOutBroadcasts()
+
 	return &room
 }
 
@@ -121,8 +170,6 @@ func main() {
 	roomList = make(map[RoomID]*Room)
 	idGen := UniqueIDGen()
 	theRoom := MakeStupidRoom()
-
-	roomList[theRoom.id] = theRoom
 
 	if err == nil {
 		go PlayerListManager(playerRemoveChan, playerList)
@@ -167,10 +214,7 @@ func PlacePlayerInRoom(r *Room, p *Player) {
 
 func UniqueIDGen() func() int {
 	x, xchan := 0, make(chan int)
-
-	go func() {
-		for ; ; x += 1 { xchan <- x }
-	}()
+	go func() { for ; ; x += 1 { xchan <- x } }()
 
 	return func() int { return <- xchan }
 }
@@ -205,6 +249,8 @@ func (p *Player) ExecCommandLoop() {
 				p.Say(nextCommandArgs) 
 			} else if nextCommandRoot == "take" {
 				p.Take(nextCommandArgs) 
+			} else if nextCommandRoot == "go" {
+				p.GoExit(nextCommandArgs)
 			}
 		}
 		p.WriteString("> ")
@@ -267,6 +313,45 @@ func (p *Player) Take(args []string) {
 		}
 	} else {
 		p.WriteString("Take objects by typing 'take [object name]'.\n")
+	}
+}
+
+func (r *RoomExitInfo) Name() string {
+	if(r.exitSide == SideA) {
+		return r.exit.AExitName()
+	} else {
+		return r.exit.BExitName()
+	}
+	return ""
+}
+
+func (r *RoomExitInfo) OtherSide() *Room {
+	if(r.exitSide == SideA) {
+		return r.exit.RoomB()
+	} else {
+		return r.exit.RoomA()
+	}
+	return nil
+}
+
+func (p *Player) GoExit(args []string) {
+	room := roomList[p.room]
+	if(len(args) < 1) {
+		p.WriteString("Go usage: go [exit name]. Ex. go north")
+		return 
+	}
+	var foundExit *RoomExitInfo
+	for _,exit := range(room.exits) {
+		if args[0] == exit.Name() {
+			foundExit = &exit
+			break
+		}
+	}
+	if foundExit != nil {
+		PlacePlayerInRoom(foundExit.OtherSide(), p)
+		p.WriteString("Should go through exit " + foundExit.Name())
+	} else {
+		p.WriteString("No visible exit " + args[0] + ".\n")
 	}
 }
 
