@@ -7,7 +7,6 @@ import ("fmt"
 	"io"
 	"strings"
 	"regexp"
-//	"container/list"
 )
 
 /*
@@ -473,8 +472,7 @@ func (p Player) DoesPerceive(s Stimulus) bool {
 	return false
 }
 
-// Would love to do away with this hack
-func DemoteToPhysObjList(ps map[int]Player) []PhysicalObject {
+func PlayersAsPhysObjSlice(ps map[int]Player) []PhysicalObject {
 	physObjs := make([]PhysicalObject, len(ps))
 	n := 0
 	for _, p := range(ps) { 
@@ -493,7 +491,7 @@ func (p Player) PerceiveList() PerceiveMap {
 	people := room.players
 	roomObjects := room.physObjects
 	invObjects := p.inventory
-	targetList = append(DemoteToPhysObjList(people), roomObjects...)
+	targetList = append(PlayersAsPhysObjSlice(people), roomObjects...)
 	targetList = append(targetList, invObjects...)
 
 	for _,target := range(targetList) {
