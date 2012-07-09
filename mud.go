@@ -7,6 +7,7 @@ import ("fmt"
 	"io"
 	"strings"
 	"regexp"
+//	"container/list"
 )
 
 /*
@@ -40,11 +41,13 @@ type Stimulus interface {
 type PlayerEnterStimulus struct {
 	Stimulus
 	player *Player
+	from string
 }
 
 type PlayerLeaveStimulus struct {
 	Stimulus
 	player *Player
+	to string
 }
 
 type PlayerSayStimulus struct {
@@ -74,7 +77,7 @@ type RoomExitInfo struct {
 type Room struct {
 	id RoomID
 	text string
-	players []Player
+	players map[int]Player
 	physObjects []PhysicalObject
 	exits []RoomExitInfo
 	stimuliBroadcast chan Stimulus
@@ -148,6 +151,8 @@ func MakeStupidRoom() *Room {
 
 	room.stimuliBroadcast = make(chan Stimulus, 10)
 	room2.stimuliBroadcast = make(chan Stimulus, 10)
+	room.players = make(map[int]Player)
+	room2.players = make(map[int]Player)
 
 	ConnectEastWest(&room, &room2)
 	theBall := Ball{}
@@ -170,6 +175,8 @@ func main() {
 	roomList = make(map[RoomID]*Room)
 	idGen := UniqueIDGen()
 	theRoom := MakeStupidRoom()
+
+	go HeartbeatLoop()
 
 	if err == nil {
 		go PlayerListManager(playerRemoveChan, playerList)
@@ -205,11 +212,12 @@ func PlacePlayerInRoom(r *Room, p *Player) {
 		oldRoom := roomList[oldRoomID]
 		oldRoom.stimuliBroadcast <- 
 			PlayerLeaveStimulus{player: p}
+		delete(oldRoom.players, p.id)
 	}
 	
 	p.room = r.id
 	r.stimuliBroadcast <- PlayerEnterStimulus{player: p}
-	r.players = append(r.players, *p)
+	r.players[p.id] = *p
 }
 
 func UniqueIDGen() func() int {
@@ -228,7 +236,7 @@ func PlayerListManager(toRemove chan *Player, pList map[int]*Player) {
 }
 
 func SplitCommandString(cmd string) []string {
-	re, _ := regexp.Compile(`(\S+)|(['"].+['"])`)
+	re, _ := regexp.Compile(`(\S+)|(['"][^'"]+['"])`)
 	return re.FindAllString(cmd, 10)
 }
 
@@ -380,9 +388,11 @@ func (p *Player) StimuliLoop() {
 	}
 }
 
-func (p *Player) HeartbeatLoop() {
-	for {
-		p.WriteString("Heartbeat\n")
+func HeartbeatLoop() {
+	//recurScheduled := make(map[int]list.List)
+
+	for n:=0 ; ; n++ {
+		fmt.Println("Heartbeat", time.Now())
 		time.Sleep(5*time.Second)
 	}
 }
@@ -464,9 +474,13 @@ func (p Player) DoesPerceive(s Stimulus) bool {
 }
 
 // Would love to do away with this hack
-func DemoteToPhysObjList(ps []Player) []PhysicalObject {
+func DemoteToPhysObjList(ps map[int]Player) []PhysicalObject {
 	physObjs := make([]PhysicalObject, len(ps))
-	for idx, p := range(ps) { physObjs[idx] = p }
+	n := 0
+	for _, p := range(ps) { 
+		physObjs[n] = p 
+		n++
+	}
 	return physObjs
 }
 
