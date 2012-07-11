@@ -5,6 +5,9 @@ var RoomList map[RoomID]*Room;
 type RoomID int
 type RoomSide int
 
+type RoomConnCreator func() *SimpleRoomConnection
+type RoomConnector func(a *Room, b *Room) *SimpleRoomConnection
+
 const (
 	SideA RoomSide = iota
 	SideB
@@ -32,28 +35,45 @@ type RoomConnection interface {
 	BExitName() string
 }
 
-type EastWestRoomConnection struct {
+type SimpleRoomConnection struct {
 	RoomConnection
-	roomA *Room
-	roomB *Room
+	roomA, roomB *Room
+	aExitName, bExitName string
 }
 
-func (rc EastWestRoomConnection) RoomA() *Room { return rc.roomA }
-func (rc EastWestRoomConnection) RoomB() *Room { return rc.roomB }
-func (rc EastWestRoomConnection) AExitName() string { return "east" }
-func (rc EastWestRoomConnection) BExitName() string { return "west" }
+func (rc SimpleRoomConnection) RoomA() *Room { return rc.roomA }
+func (rc SimpleRoomConnection) RoomB() *Room { return rc.roomB }
+func (rc SimpleRoomConnection) AExitName() string { return rc.aExitName }
+func (rc SimpleRoomConnection) BExitName() string { return rc.bExitName }
 
-// 'a' side will be west of 'b' side
-func ConnectEastWest(a *Room, b *Room) *EastWestRoomConnection {
-	roomConn := new(EastWestRoomConnection)
-	roomConn.roomA = a
-	roomConn.roomB = b
-	reiA := RoomExitInfo{exitSide: SideA, exit: roomConn}
-	reiB := RoomExitInfo{exitSide: SideB, exit: roomConn}
-	a.exits = append(a.exits, reiA)
-	b.exits = append(b.exits, reiB)
-	return roomConn
+func SimpleRoomConnectCreator(a string, b string) RoomConnCreator {
+	return func() *SimpleRoomConnection {
+		conn := new(SimpleRoomConnection)
+		conn.aExitName, conn.bExitName = a, b
+		return conn
+	}
 }
+
+var EastWestRoomConnection = SimpleRoomConnectCreator("east","west")
+var NorthSouthRoomConnection = SimpleRoomConnectCreator("north","south")
+var UpDownRoomConnection = SimpleRoomConnectCreator("up","down")
+
+func ConnectWithConnCreator(exitGen RoomConnCreator) RoomConnector {
+	return func(a *Room, b *Room) *SimpleRoomConnection {
+		roomConn := exitGen()
+		roomConn.roomA = a
+		roomConn.roomB = b
+		reiA := RoomExitInfo{exitSide: SideA, exit: roomConn}
+		reiB := RoomExitInfo{exitSide: SideB, exit: roomConn}
+		a.exits = append(a.exits, reiA)
+		b.exits = append(b.exits, reiB)
+		return roomConn
+	}
+}
+
+var ConnectEastWest = ConnectWithConnCreator(EastWestRoomConnection)
+var ConnectNorthSouth = ConnectWithConnCreator(NorthSouthRoomConnection)
+var ConnectUpDown = ConnectWithConnCreator(UpDownRoomConnection)
 
 func (r *Room) ActionQueue() {
 	for {
