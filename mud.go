@@ -17,7 +17,7 @@ import ("fmt"
  * 2. Objects - visible or not, carry-able or not
  * 3. Simple commands (look, take)
  * 4. Rooms
- * 5. Heartbeat (?)
+ * 5. Heartbeat
  *
  * Initially not supporting:
  * - Persistence of state
@@ -105,6 +105,7 @@ type PhysicalObject interface {
 	Description() string
 	Carryable() bool
 	TextHandles() []string
+	TakeReady() chan bool
 }
 
 type Ball struct { PhysicalObject }
@@ -219,6 +220,16 @@ func PlacePlayerInRoom(r *Room, p *Player) {
 	r.players[p.id] = *p
 }
 
+func (p *Player) PlaceObjectInInventoryFromRoom(o *PhysicalObject, r *Room) bool {
+	for idx, slot := range(p.inventory) {
+		if(slot == nil) {
+			p.inventory[idx] = *o
+			return true
+		}
+	}
+	return false
+}
+
 func UniqueIDGen() func() int {
 	x, xchan := 0, make(chan int)
 	go func() { for ; ; x += 1 { xchan <- x } }()
@@ -249,13 +260,13 @@ func (p *Player) ExecCommandLoop() {
 			fmt.Println("Next command from",p.name,":",nextCommandRoot)
 			fmt.Println("args:",nextCommandArgs)
 			if nextCommandRoot == "who" {
-				p.Who(nextCommandArgs) 
+				p.Who(nextCommandArgs)
 			} else if nextCommandRoot == "look" {
-				p.Look(nextCommandArgs) 
+				p.Look(nextCommandArgs)
 			} else if nextCommandRoot == "say" {
-				p.Say(nextCommandArgs) 
+				p.Say(nextCommandArgs)
 			} else if nextCommandRoot == "take" {
-				p.Take(nextCommandArgs) 
+				p.Take(nextCommandArgs)
 			} else if nextCommandRoot == "go" {
 				p.GoExit(nextCommandArgs)
 			}
@@ -310,8 +321,13 @@ func (p *Player) Take(args []string) {
 
 		if targetObj, ok := p.PerceiveList()[target]; ok {
 			if targetObj.Carryable() {
-				room.stimuliBroadcast <- PlayerPickupStimulus{player: p, obj: targetObj}
-				p.WriteString("Should take " + target + " [carryable].\n")
+				if p.PlaceObjectInInventoryFromRoom(&targetObj, room) {
+					room.stimuliBroadcast <- 
+						PlayerPickupStimulus{player: p, obj: targetObj}
+				} else {
+					p.WriteString("No space in your inventory for " + target + ".\n")
+				}
+				// p.WriteString("Should take " + target + " [carryable].\n")
 			} else {
 				p.WriteString("Should not take " + target + " [not carryable].\n")
 			}
@@ -391,7 +407,7 @@ func HeartbeatLoop() {
 	//recurScheduled := make(map[int]list.List)
 
 	for n:=0 ; ; n++ {
-		fmt.Println("Heartbeat", time.Now())
+		//fmt.Println("Heartbeat", time.Now())
 		time.Sleep(5*time.Second)
 	}
 }
@@ -495,7 +511,8 @@ func (p Player) PerceiveList() PerceiveMap {
 	targetList = append(targetList, invObjects...)
 
 	for _,target := range(targetList) {
-		if target.Visible() {
+		fmt.Println(target)
+		if target != nil && target.Visible() {
 			for _,handle := range(target.TextHandles()) {
 				physObjects[handle] = target
 			}
@@ -525,6 +542,7 @@ func AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Player {
 	p.sock = conn
 	p.commandBuf = make(chan string, 10)
 	p.stimuli = make(chan Stimulus, 5)
+	p.inventory = make([]PhysicalObject, 10)
 	p.room = -1
 	return p
 }
