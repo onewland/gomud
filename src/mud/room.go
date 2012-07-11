@@ -47,7 +47,6 @@ func (rc EastWestRoomConnection) BExitName() string { return "west" }
 
 // 'a' side will be west of 'b' side
 func ConnectEastWest(a *Room, b *Room) *EastWestRoomConnection {
-	fmt.Println("ConnectEastWest",a,b)
 	roomConn := new(EastWestRoomConnection)
 	roomConn.roomA = a
 	roomConn.roomB = b
@@ -55,7 +54,6 @@ func ConnectEastWest(a *Room, b *Room) *EastWestRoomConnection {
 	reiB := RoomExitInfo{exitSide: SideB, exit: roomConn}
 	a.exits = append(a.exits, reiA)
 	b.exits = append(b.exits, reiB)
-	fmt.Println("ConnectEastWest",a,b)
 	return roomConn
 }
 
