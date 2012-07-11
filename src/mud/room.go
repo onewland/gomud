@@ -1,7 +1,5 @@
 package mud
 
-import "fmt"
-
 var RoomList map[RoomID]*Room;
 
 type RoomID int

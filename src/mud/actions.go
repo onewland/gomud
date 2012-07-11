@@ -9,6 +9,14 @@ type PlayerTakeAction struct {
 	userTargetIdent string
 }
 
+
+func NoSpaceMsg(name string) string {
+	return "No space in your inventory for " + name + ".\n"
+}
+func NoCarryMsg(name string) string {
+	return name + " cannot be carried.\n"
+}
+
 func (p PlayerTakeAction) Targets() []PhysicalObject {
 	targets := make([]PhysicalObject, 1)
 	targets[0] = p.target
@@ -20,14 +28,15 @@ func (p PlayerTakeAction) Exec() {
 	player := p.player
 	room := RoomList[player.room]
 	if target, ok := player.PerceiveList()[p.userTargetIdent]; ok {
+		stim := PlayerPickupStimulus{player: player, obj: target}
 		if target.Carryable() {
-			if player.PlaceObjectInInventoryFromRoom(&target, room) {
-				room.stimuliBroadcast <- PlayerPickupStimulus{player: player, obj: target}
+			if player.TakeObject(&target, room) {
+				room.stimuliBroadcast <- stim
 			} else {
-				player.WriteString("No space in your inventory for " + p.userTargetIdent + ".\n")
+				player.WriteString(NoSpaceMsg(p.userTargetIdent))
 			}
 		} else {
-			player.WriteString("Should not take " + p.userTargetIdent + " [not carryable].\n")
+			player.WriteString(NoCarryMsg(p.userTargetIdent))
 		}
 	} else {
 		player.WriteString(p.userTargetIdent + " not seen.\n")

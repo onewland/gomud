@@ -41,7 +41,7 @@ func (p Player) TextHandles() []string {
 	return []string{ strings.ToLower(p.name) } 
 }
 
-func (p *Player) PlaceObjectInInventoryFromRoom(o *PhysicalObject, r *Room) bool {
+func (p *Player) TakeObject(o *PhysicalObject, r *Room) bool {
 	for idx, slot := range(p.inventory) {
 		if(slot == nil) {
 			p.inventory[idx] = *o
