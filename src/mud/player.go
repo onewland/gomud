@@ -37,7 +37,9 @@ func PlacePlayerInRoom(r *Room, p *Player) {
 func (p Player) Visible() bool { return true }
 func (p Player) Description() string { return "A person: " + p.name }
 func (p Player) Carryable() bool { return false }
-func (p Player) TextHandles() []string { return []string{ strings.ToLower(p.name) } }
+func (p Player) TextHandles() []string { 
+	return []string{ strings.ToLower(p.name) } 
+}
 
 func (p *Player) PlaceObjectInInventoryFromRoom(o *PhysicalObject, r *Room) bool {
 	for idx, slot := range(p.inventory) {
@@ -62,7 +64,8 @@ func (p *Player) ExecCommandLoop() {
 		if nextCommandSplit != nil && len(nextCommandSplit) > 0 {
 			nextCommandRoot := nextCommandSplit[0]
 			nextCommandArgs := nextCommandSplit[1:]
-			fmt.Println("Next command from",p.name,":",nextCommandRoot)
+			fmt.Println("Next command from",p.name,
+				":",nextCommandRoot)
 			fmt.Println("args:",nextCommandArgs)
 			if nextCommandRoot == "who" {
 				p.Who(nextCommandArgs)
@@ -187,8 +190,10 @@ func (p *Player) WriteString(str string) {
 
 func (p Player) DoesPerceive(s Stimulus) bool {
 	switch s.(type) {
-	case PlayerEnterStimulus: return p.DoesPerceiveEnter(s.(PlayerEnterStimulus))
-        case PlayerLeaveStimulus: return p.DoesPerceiveExit(s.(PlayerLeaveStimulus))
+	case PlayerEnterStimulus: 
+		return p.DoesPerceiveEnter(s.(PlayerEnterStimulus))
+	case PlayerLeaveStimulus: 
+		return p.DoesPerceiveExit(s.(PlayerLeaveStimulus))
 	case PlayerSayStimulus: return true
 	case PlayerPickupStimulus: return true
 	}
