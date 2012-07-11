@@ -378,7 +378,7 @@ func (p *Player) Take(args []string) {
 		target := strings.ToLower(args[0])
 		room.interactionQueue <-
 			PlayerTakeAction{ player: p, userTargetIdent: target }
-	}else {
+	} else {
 		p.WriteString("Take objects by typing 'take [object name]'.\n")
 	}
 }
