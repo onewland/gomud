@@ -25,6 +25,44 @@ import ("fmt"
  * - NPCs
  */
 
+type InterObjectAction interface {
+	Targets() []PhysicalObject
+	Source() PhysicalObject
+	Exec()
+}
+
+type PlayerTakeAction struct {
+	InterObjectAction
+	player *Player
+	target PhysicalObject
+	userTargetIdent string
+}
+
+func (p PlayerTakeAction) Targets() []PhysicalObject {
+	targets := make([]PhysicalObject, 1)
+	targets[0] = p.target
+	return targets
+}
+func (p PlayerTakeAction) Source() PhysicalObject { return p.player }
+func (p PlayerTakeAction) Exec() {
+	fmt.Println("exec take",p.target,p.Source())
+	player := p.player
+	room := roomList[player.room]
+	if target, ok := player.PerceiveList()[p.userTargetIdent]; ok {
+		if target.Carryable() {
+			if player.PlaceObjectInInventoryFromRoom(&target, room) {
+				room.stimuliBroadcast <- PlayerPickupStimulus{player: player, obj: target}
+			} else {
+				player.WriteString("No space in your inventory for " + p.userTargetIdent + ".\n")
+			}
+		} else {
+			player.WriteString("Should not take " + p.userTargetIdent + " [not carryable].\n")
+		}
+	} else {
+		player.WriteString(p.userTargetIdent + " not seen.\n")
+	}
+}
+
 type PerceiveMap map[string]PhysicalObject
 
 type Perceiver interface {
@@ -80,6 +118,7 @@ type Room struct {
 	physObjects []PhysicalObject
 	exits []RoomExitInfo
 	stimuliBroadcast chan Stimulus
+	interactionQueue chan InterObjectAction
 }
 
 type RoomConnection interface {
@@ -151,6 +190,8 @@ func MakeStupidRoom() *Room {
 
 	room.stimuliBroadcast = make(chan Stimulus, 10)
 	room2.stimuliBroadcast = make(chan Stimulus, 10)
+	room.interactionQueue = make(chan InterObjectAction, 10)
+	room2.interactionQueue = make(chan InterObjectAction, 10)
 	room.players = make(map[int]Player)
 	room2.players = make(map[int]Player)
 
@@ -163,6 +204,8 @@ func MakeStupidRoom() *Room {
 
 	go room.FanOutBroadcasts()
 	go room2.FanOutBroadcasts()
+	go room.ActionQueue()
+	go room2.ActionQueue()
 
 	return &room
 }
@@ -224,6 +267,12 @@ func (p *Player) PlaceObjectInInventoryFromRoom(o *PhysicalObject, r *Room) bool
 	for idx, slot := range(p.inventory) {
 		if(slot == nil) {
 			p.inventory[idx] = *o
+			for idx, obj := range(r.physObjects) {
+				if(*o == obj) {
+					r.physObjects[idx] = nil
+					break
+				}
+			}
 			return true
 		}
 	}
@@ -269,9 +318,18 @@ func (p *Player) ExecCommandLoop() {
 				p.Take(nextCommandArgs)
 			} else if nextCommandRoot == "go" {
 				p.GoExit(nextCommandArgs)
+			} else if nextCommandRoot == "inv" {
+				p.Inv(nextCommandArgs)
 			}
 		}
 		p.WriteString("> ")
+	}
+}
+
+func (r *Room) ActionQueue() {
+	for {
+		action := <- r.interactionQueue
+		action.Exec()
 	}
 }
 
@@ -318,25 +376,21 @@ func (p *Player) Take(args []string) {
 	room := roomList[p.room]
 	if len(args) > 0 {
 		target := strings.ToLower(args[0])
-
-		if targetObj, ok := p.PerceiveList()[target]; ok {
-			if targetObj.Carryable() {
-				if p.PlaceObjectInInventoryFromRoom(&targetObj, room) {
-					room.stimuliBroadcast <- 
-						PlayerPickupStimulus{player: p, obj: targetObj}
-				} else {
-					p.WriteString("No space in your inventory for " + target + ".\n")
-				}
-				// p.WriteString("Should take " + target + " [carryable].\n")
-			} else {
-				p.WriteString("Should not take " + target + " [not carryable].\n")
-			}
-		} else {
-			p.WriteString(target + " not seen.\n")
-		}
-	} else {
+		room.interactionQueue <-
+			PlayerTakeAction{ player: p, userTargetIdent: target }
+	}else {
 		p.WriteString("Take objects by typing 'take [object name]'.\n")
 	}
+}
+
+func (p *Player) Inv(args []string) {
+	p.WriteString(Divider())
+	for _, obj := range p.inventory {
+		if obj != nil {
+			p.WriteString(obj.Description())
+		}
+	}
+	p.WriteString(Divider())
 }
 
 func (r *RoomExitInfo) Name() string {
@@ -431,7 +485,7 @@ func (r *Room) Describe(toPlayer *Player) string {
 func (r *Room) DescribeObjects(toPlayer *Player) string {
 	objTextBuf := "Sitting here is/are:\n"
 	for _,obj := range r.physObjects {
-		if obj.Visible() {
+		if obj != nil && obj.Visible() {
 			objTextBuf += obj.Description()
 			objTextBuf += "\n"
 		}
