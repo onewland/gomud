@@ -3,6 +3,7 @@ package main
 import ("fmt"
 	"net"
 	"math/rand"
+	"strconv"
 	"time"
 	"mud")
 
@@ -29,9 +30,38 @@ func (b Ball) Description() string { return "A red ball" }
 func (b Ball) Carryable() bool { return true }
 func (b Ball) TextHandles() []string { return []string{"ball","red ball"} }
 
+type HeartbeatClock struct { 
+	mud.PhysicalObject
+	mud.TimeListener
+	counter int
+	tPing chan int
+}
+
+func (c HeartbeatClock) Visible() bool { return true }
+func (c HeartbeatClock) Carryable() bool { return false }
+func (c HeartbeatClock) TextHandles() []string { 
+	return []string{"clock", "heartbeat clock"} 
+}
+func (c HeartbeatClock) Description() string { 
+	return "A large clock reading " + strconv.Itoa(c.counter)
+}
+func (c *HeartbeatClock) Ping() chan int { return c.tPing }
+
+func (c *HeartbeatClock) UpdateTimeLoop() {
+	for { c.counter = <- c.tPing }
+}
+
+func MakeClock() *HeartbeatClock {
+	clock := new(HeartbeatClock)
+	clock.tPing = make(chan int)
+	return clock
+}
+
 func MakeStupidRoom() *mud.Room {
 	theBall := Ball{}
-	ballSlice := []mud.PhysicalObject{theBall}
+	theClock := MakeClock()
+	mud.TimeListenerList = []mud.TimeListener{theClock}
+	ballSlice := []mud.PhysicalObject{theBall, theClock}
 	empty := []mud.PhysicalObject{}
 
 	room := mud.NewBasicRoom(1, "You are in a bedroom.", ballSlice)
@@ -43,6 +73,7 @@ func MakeStupidRoom() *mud.Room {
 	go room2.FanOutBroadcasts()
 	go room.ActionQueue()
 	go room2.ActionQueue()
+	go theClock.UpdateTimeLoop()
 
 	return room
 }
@@ -56,7 +87,7 @@ func main() {
 	idGen := UniqueIDGen()
 	theRoom := MakeStupidRoom()
 
-	go HeartbeatLoop()
+	go HeartbeatLoop(mud.TimeListenerList)
 
 	if err == nil {
 		go mud.PlayerListManager(playerRemoveChan, mud.PlayerList)
@@ -89,10 +120,11 @@ func UniqueIDGen() func() int {
 	return func() int { return <- xchan }
 }
 
-func HeartbeatLoop() {
-	//recurScheduled := make(map[int]list.List)
+func HeartbeatLoop(listeners []mud.TimeListener) {
 	for n:=0 ; ; n++ {
-		//fmt.Println("Heartbeat", time.Now())
-		time.Sleep(5*time.Second)
+		for _, l := range(listeners) {
+			l.Ping() <- n
+		}
+		time.Sleep(1*time.Millisecond)
 	}
 }
