@@ -20,6 +20,22 @@ type Player struct {
 	stimuli chan Stimulus
 }
 
+var colorMap map[string]string
+
+func init() {
+	colorMap = make(map[string]string)
+	colorMap["&black;"] = "\x1b[30m"
+	colorMap["&red;"] = "\x1b[31m"
+	colorMap["&green;"] = "\x1b[32m"
+	colorMap["&yellow;"] = "\x1b[33m"
+	colorMap["&blue;"] = "\x1b[34m"
+	colorMap["&magenta;"] = "\x1b[35m"
+	colorMap["&cyan;"] = "\x1b[36m"
+	colorMap["&white;"] = "\x1b[37m"
+	colorMap["&;"] = "\x1b[0m"
+}
+
+
 func PlacePlayerInRoom(r *Room, p *Player) {
 	oldRoomID := p.room
 	if oldRoomID != -1 {
@@ -185,7 +201,11 @@ func (p *Player) StimuliLoop() {
 }
 
 func (p *Player) WriteString(str string) {
-	p.sock.Write([]byte(str))
+	str_acc := str
+	for easyCode, termCode := range colorMap {
+		str_acc = strings.Replace(str_acc, easyCode, termCode, -1)
+	}
+	p.sock.Write([]byte(str_acc))
 }
 
 func (p Player) DoesPerceive(s Stimulus) bool {
