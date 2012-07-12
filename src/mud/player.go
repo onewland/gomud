@@ -18,6 +18,8 @@ type Player struct {
 	inventory []PhysicalObject
 	commandBuf chan string
 	stimuli chan Stimulus
+	quitting chan bool
+	commandDone chan bool
 }
 
 var colorMap map[string]string
@@ -35,6 +37,9 @@ func init() {
 	colorMap["&;"] = "\x1b[0m"
 }
 
+func RemovePlayerFromRoom(r *Room, p *Player) {
+	delete(r.players, p.id)
+}
 
 func PlacePlayerInRoom(r *Room, p *Player) {
 	oldRoomID := p.room
@@ -42,7 +47,7 @@ func PlacePlayerInRoom(r *Room, p *Player) {
 		oldRoom := RoomList[oldRoomID]
 		oldRoom.stimuliBroadcast <- 
 			PlayerLeaveStimulus{player: p}
-		delete(oldRoom.players, p.id)
+		RemovePlayerFromRoom(oldRoom, p)
 	}
 	
 	p.room = r.id
@@ -95,9 +100,12 @@ func (p *Player) ExecCommandLoop() {
 				p.GoExit(nextCommandArgs)
 			} else if nextCommandRoot == "inv" {
 				p.Inv(nextCommandArgs)
+			} else if nextCommandRoot == "quit" {
+				p.Quit(nextCommandArgs)
 			}
 		}
 		p.WriteString("> ")
+		p.commandDone <- true
 	}
 }
 
@@ -175,17 +183,31 @@ func (p *Player) GoExit(args []string) {
 	}
 }
 
+func (p *Player) Quit(args[] string) {
+	fmt.Println("p.quitting start")
+	p.quitting <- true
+	fmt.Println("p.quitting end")
+}
+
 func (p *Player) ReadLoop(playerRemoveChan chan *Player) {
 	rawBuf := make([]byte, 1024)
-	for {
-		n, err := p.sock.Read(rawBuf)
-		if err == nil {
-			strCommand := string(rawBuf[:n])
-			p.commandBuf <- strings.TrimRight(strCommand,"\n\r")
-		} else if err == io.EOF {
-			fmt.Println(p.name, "Disconnected")
+	defer p.sock.Close()
+
+	for ; ; <- p.commandDone {
+		select {
+		case <-p.quitting:
 			playerRemoveChan <- p
 			return
+		default:
+			n, err := p.sock.Read(rawBuf)
+			if err == nil {
+				strCommand := string(rawBuf[:n])
+				p.commandBuf <- strings.TrimRight(strCommand,"\n\r")
+			} else if err == io.EOF {
+				fmt.Println(p.name, "Disconnected")
+				playerRemoveChan <- p
+				return
+			}
 		}
 	}
 }
@@ -238,7 +260,9 @@ func AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Player {
 	p.id = idSource()
 	p.name = (color + animal)
 	p.sock = conn
+	p.quitting = make(chan bool, 1)
 	p.commandBuf = make(chan string, 10)
+	p.commandDone = make(chan bool)
 	p.stimuli = make(chan Stimulus, 5)
 	p.inventory = make([]PhysicalObject, 10)
 	p.room = -1
@@ -251,6 +275,8 @@ func AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Player {
 func PlayerListManager(toRemove chan *Player, pList map[int]*Player) {
 	for {
 		pRemove := <- toRemove
+		pRoom := RoomList[pRemove.room]
+		RemovePlayerFromRoom(pRoom, pRemove)
 		delete(pList, pRemove.id)
 		fmt.Println("Removed", pRemove.name, "from player list")
 	}
