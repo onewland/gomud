@@ -9,6 +9,7 @@ import ("net"
 var PlayerList map[int]*Player
 
 type Player struct {
+	Talker
 	Perceiver
 	PhysicalObject
 	id int
@@ -23,6 +24,10 @@ type Player struct {
 }
 
 var colorMap map[string]string
+
+func (p Player) ID() int { return p.id }
+func (p Player) Name() string { return p.name }
+func (p Player) StimuliChannel() chan Stimulus { return p.stimuli }
 
 func init() {
 	colorMap = make(map[string]string)
@@ -39,6 +44,7 @@ func init() {
 
 func RemovePlayerFromRoom(r *Room, p *Player) {
 	delete(r.players, p.id)
+	delete(r.perceivers, p.id)
 }
 
 func PlacePlayerInRoom(r *Room, p *Player) {
@@ -52,6 +58,7 @@ func PlacePlayerInRoom(r *Room, p *Player) {
 	
 	p.room = r.id
 	r.stimuliBroadcast <- PlayerEnterStimulus{player: p}
+	r.perceivers[p.id] = p
 	r.players[p.id] = *p
 }
 
@@ -135,7 +142,7 @@ func (p *Player) Who(args []string) {
 
 func (p *Player) Say(args []string) {
 	room := RoomList[p.room]
-	sayStim := PlayerSayStimulus{player: p, text: strings.Join(args," ")}
+	sayStim := TalkerSayStimulus{talker: p, text: strings.Join(args," ")}
 	room.stimuliBroadcast <- sayStim
 }
 
@@ -212,14 +219,9 @@ func (p *Player) ReadLoop(playerRemoveChan chan *Player) {
 	}
 }
 
-func (p *Player) StimuliLoop() {
-	for {
-		nextStimulus := <- p.stimuli
-		if p.DoesPerceive(nextStimulus) {
-			p.WriteString(nextStimulus.Description(p))
-		}
-		fmt.Println(p.name,"receiving stimulus",nextStimulus.StimType())
-	}
+func (p *Player) HandleStimulus(s Stimulus) {
+	p.WriteString(s.Description(p))
+	fmt.Println(p.name,"receiving stimulus",s.StimType())
 }
 
 func (p *Player) WriteString(str string) {
@@ -236,7 +238,7 @@ func (p Player) DoesPerceive(s Stimulus) bool {
 		return p.DoesPerceiveEnter(s.(PlayerEnterStimulus))
 	case PlayerLeaveStimulus: 
 		return p.DoesPerceiveExit(s.(PlayerLeaveStimulus))
-	case PlayerSayStimulus: return true
+	case TalkerSayStimulus: return true
 	case PlayerPickupStimulus: return true
 	}
 	return false

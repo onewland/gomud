@@ -22,6 +22,7 @@ type Room struct {
 	id RoomID
 	text string
 	players map[int]Player
+	perceivers map[int]Perceiver
 	physObjects []PhysicalObject
 	exits []RoomExitInfo
 	stimuliBroadcast chan Stimulus
@@ -85,8 +86,8 @@ func (r *Room) ActionQueue() {
 func (r *Room) FanOutBroadcasts() {
 	for {
 		broadcast := <- r.stimuliBroadcast
-		for _,p := range r.players { 
-			p.stimuli <- broadcast 
+		for _,p := range r.perceivers { 
+			p.StimuliChannel() <- broadcast 
 		}
 	}
 }
@@ -139,11 +140,20 @@ func (r *Room) DescribePlayers(toPlayer *Player) string {
 	return objTextBuf
 }
 
+func (r *Room) AddPerceiver(p Perceiver) {
+	r.perceivers[p.ID()] = p
+}
+
+func (r *Room) Broadcast(s Stimulus) {
+	r.stimuliBroadcast <- s
+}
+
 func NewBasicRoom(rid RoomID, rtext string, physObjs []PhysicalObject) *Room {
 	r := Room{id: rid, text: rtext}
 	r.stimuliBroadcast = make(chan Stimulus, 10)
 	r.interactionQueue = make(chan InterObjectAction, 10)
 	r.players = make(map[int]Player)
+	r.perceivers = make(map[int]Perceiver)
 	r.physObjects = physObjs
 	r.exits = []RoomExitInfo{}
 	RoomList[r.id] = &r

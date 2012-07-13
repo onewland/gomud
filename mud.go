@@ -4,6 +4,7 @@ import ("fmt"
 	"net"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 	"mud")
 
@@ -50,6 +51,59 @@ func (c *HeartbeatClock) UpdateTimeLoop() {
 	for { c.counter = <- c.tPing }
 }
 
+type Puritan struct {
+	mud.Talker
+	mud.NPC
+	room *mud.Room
+	stimuli chan mud.Stimulus
+	id int
+}
+
+func (p Puritan) ID() int { return p.id }
+func (p Puritan) Name() string { return "Mary Magdalene" }
+// Only respond to Talk stimulus to scorn people for cursing
+func (p Puritan) DoesPerceive(s mud.Stimulus) bool {
+	_, ok := s.(mud.TalkerSayStimulus)
+	return ok
+}
+
+func ContainsAny(s string, subs ...string) bool {
+	for _,sub := range(subs) {
+		if(strings.Contains(s, sub)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (p Puritan) HandleStimulus(s mud.Stimulus) {
+	scast, ok := s.(mud.TalkerSayStimulus)
+	stim := mud.TalkerSay(p, "Wash your mouth out, " + scast.Source().Name())
+	if !ok {
+		panic("Puritan should only receive TalkerSayStimulus")
+	} else {
+		text := scast.Text()
+		if(ContainsAny(text,
+			"shit","piss","fuck",
+			"cunt","cocksucker",
+			"motherfucker","tits")) {
+			p.room.Broadcast(stim)
+		}
+	}
+}
+func (p Puritan) StimuliChannel() chan mud.Stimulus {
+	return p.stimuli
+}
+func (p Puritan) Visible() bool { return true }
+func (p Puritan) Description() string { return p.Name() }
+
+func MakePuritan() *Puritan {
+	puritan := new(Puritan)
+	puritan.id = 100
+	puritan.stimuli = make(chan mud.Stimulus, 5)
+	return puritan
+}
+
 func MakeClock() *HeartbeatClock {
 	clock := new(HeartbeatClock)
 	clock.tPing = make(chan int)
@@ -57,14 +111,18 @@ func MakeClock() *HeartbeatClock {
 }
 
 func MakeStupidRoom() *mud.Room {
+	puritan := MakePuritan()
 	theBall := Ball{}
 	theClock := MakeClock()
 	mud.TimeListenerList = []mud.TimeListener{theClock}
-	ballSlice := []mud.PhysicalObject{theBall, theClock}
+	ballSlice := []mud.PhysicalObject{theBall, theClock, puritan}
 	empty := []mud.PhysicalObject{}
 
 	room := mud.NewBasicRoom(1, "You are in a bedroom.", ballSlice)
+	room.AddPerceiver(puritan)
 	room2 := mud.NewBasicRoom(2, "You are in a bathroom.", empty)
+	puritan.room = room
+	go mud.StimuliLoop(puritan)
 
 	mud.ConnectEastWest(room, room2)
 
@@ -102,7 +160,7 @@ func main() {
 
 				go newP.ReadLoop(playerRemoveChan)
 				go newP.ExecCommandLoop()
-				go newP.StimuliLoop()
+				go mud.StimuliLoop(newP)
 			} else {
 				fmt.Println("Error in accept")
 			}

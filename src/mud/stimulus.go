@@ -5,9 +5,9 @@ type Stimulus interface {
 	Description(p Perceiver) string
 }
 
-type PlayerSayStimulus struct {
+type TalkerSayStimulus struct {
 	Stimulus
-	player *Player
+	talker Talker
 	text string
 }
 
@@ -39,20 +39,13 @@ func (s PlayerLeaveStimulus) Description(p Perceiver) string {
 	return s.player.name + " has left the room.\n"
 }
 
-func (s PlayerSayStimulus) StimType() string { return "say" }
-func (s PlayerSayStimulus) Description(p Perceiver) string {
+func (s TalkerSayStimulus) StimType() string { return "say" }
+func (s TalkerSayStimulus) Description(p Perceiver) string {
 	playerReceiver, ok := p.(*Player)
-	if ok && s.player.id == playerReceiver.id {
+	if ok && s.talker.ID() == playerReceiver.id {
 		return "You say \"" + s.text + "\"\n"
 	} 
-	return s.player.name + " said " + "\"" + s.text + "\".\n"
+	return s.talker.Name() + " said " + "\"" + s.text + "\".\n"
 }
-
-func (s PlayerPickupStimulus) StimType() string { return "take" }
-func (s PlayerPickupStimulus) Description(p Perceiver) string {
-	playerReceiver, ok := p.(*Player)
-	if ok && s.player.id == playerReceiver.id {
-		return "You took " + s.obj.Description() + "\n"
-	}
-	return s.player.name + " took " + s.obj.Description() + ".\n"
-}
+func (s TalkerSayStimulus) Text() string { return s.text }
+func (s TalkerSayStimulus) Source() Talker { return s.talker }
