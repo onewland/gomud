@@ -49,3 +49,12 @@ func (s TalkerSayStimulus) Description(p Perceiver) string {
 }
 func (s TalkerSayStimulus) Text() string { return s.text }
 func (s TalkerSayStimulus) Source() Talker { return s.talker }
+
+func (s PlayerPickupStimulus) StimType() string { return "take" }
+func (s PlayerPickupStimulus) Description(p Perceiver) string {
+	playerReceiver, ok := p.(*Player)
+	if ok && s.player.ID() == playerReceiver.id {
+		return "You picked up \"" + s.obj.Description() + "\"\n"
+	} 
+	return s.player.name + " said " + "\"" + s.obj.Description() + "\".\n"
+}
