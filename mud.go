@@ -66,6 +66,9 @@ func (p Puritan) DoesPerceive(s mud.Stimulus) bool {
 	_, ok := s.(mud.TalkerSayStimulus)
 	return ok
 }
+func (p Puritan) TextHandles() []string {
+	return []string { "mary", "mm" }
+}
 
 func ContainsAny(s string, subs ...string) bool {
 	for _,sub := range(subs) {
@@ -96,6 +99,7 @@ func (p Puritan) StimuliChannel() chan mud.Stimulus {
 }
 func (p Puritan) Visible() bool { return true }
 func (p Puritan) Description() string { return p.Name() }
+func (p Puritan) Carryable() bool { return false }
 
 func MakePuritan() *Puritan {
 	puritan := new(Puritan)
