@@ -5,5 +5,4 @@ type PhysicalObject interface {
 	Description() string
 	Carryable() bool
 	TextHandles() []string
-	TakeReady() chan bool
 }
