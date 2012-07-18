@@ -155,7 +155,7 @@ func NewBasicRoom(universe *Universe, rid RoomID, rtext string, physObjs []Physi
 	r.perceivers = make(map[int]Perceiver)
 	r.physObjects = physObjs
 	r.exits = []RoomExitInfo{}
-	universe.RoomList[r.id] = &r
+	universe.Rooms[r.id] = &r
 
 	return &r
 }

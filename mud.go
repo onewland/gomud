@@ -144,16 +144,14 @@ func main() {
 	listener, err := net.Listen("tcp", ":3000")
 	universe := mud.NewBasicUniverse()
 	playerRemoveChan := make(chan *mud.Player)
-	mud.PlayerList = make(map[int]*mud.Player)
 	idGen := UniqueIDGen()
 	theRoom := MakeStupidRoom(universe)
-	fmt.Println("len(rooms) =",len(universe.RoomList))
-	fmt.Println("rooms[1] =",universe.RoomList[1])
+	fmt.Println("len(rooms) =",len(universe.Rooms))
 
 	go HeartbeatLoop(mud.TimeListenerList)
 
 	if err == nil {
-		go mud.PlayerListManager(playerRemoveChan, mud.PlayerList)
+		go mud.PlayerListManager(playerRemoveChan, universe.Players)
 		defer listener.Close()
 
 		fmt.Println("Listening on port 3000")

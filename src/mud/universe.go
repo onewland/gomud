@@ -5,14 +5,14 @@ import ("net"
 	"math/rand")
 
 type Universe struct {
-	PlayerList map[int]*Player
-	RoomList map[RoomID]*Room
+	Players map[int]*Player
+	Rooms map[RoomID]*Room
 }
 
 func NewBasicUniverse() *Universe {
 	u := new(Universe)
-	u.PlayerList = make(map[int]*Player)
-	u.RoomList = make(map[RoomID]*Room)
+	u.Players = make(map[int]*Player)
+	u.Rooms = make(map[RoomID]*Room)
 	return u
 }
 
@@ -33,8 +33,18 @@ func (u *Universe) AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Playe
 	p.inventory = make([]PhysicalObject, 10)
 	p.room = -1
 	p.universe = u
-	PlayerList[p.id] = p
+	u.Players[p.id] = p
 	fmt.Println(p.name, "joined, ID =",p.id)
-	fmt.Println(len(PlayerList), "player[s] online.")
+	fmt.Println(len(u.Players), "player[s] online.")
 	return p
+}
+
+func PlayerListManager(toRemove chan *Player, pList map[int]*Player) {
+	for {
+		pRemove := <- toRemove
+		pRoom := pRemove.universe.Rooms[pRemove.room]
+		RemovePlayerFromRoom(pRoom, pRemove)
+		delete(pList, pRemove.id)
+		fmt.Println("Removed", pRemove.name, "from player list")
+	}
 }

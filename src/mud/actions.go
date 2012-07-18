@@ -24,7 +24,7 @@ func (p PlayerTakeAction) Source() PhysicalObject { return p.player }
 func (p PlayerTakeAction) Exec() {
 	player := p.player
 	universe := player.universe
-	room := universe.RoomList[player.room]
+	room := universe.Rooms[player.room]
 	if target, ok := player.PerceiveList()[p.userTargetIdent]; ok {
 		stim := PlayerPickupStimulus{player: player, obj: target}
 		if target.Carryable() {

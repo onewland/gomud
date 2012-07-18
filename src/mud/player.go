@@ -5,8 +5,6 @@ import ("net"
 	"fmt"
 	"io")
 
-var PlayerList map[int]*Player
-
 type Player struct {
 	Talker
 	Perceiver
@@ -51,7 +49,7 @@ func PlacePlayerInRoom(r *Room, p *Player) {
 	oldRoomID := p.room
 	universe := p.universe
 	if oldRoomID != -1 {
-		oldRoom := universe.RoomList[oldRoomID]
+		oldRoom := universe.Rooms[oldRoomID]
 		oldRoom.stimuliBroadcast <- 
 			PlayerLeaveStimulus{player: p}
 		RemovePlayerFromRoom(oldRoom, p)
@@ -119,7 +117,7 @@ func (p *Player) ExecCommandLoop() {
 
 func (p *Player) Look(args []string) {
 	universe := p.universe
-	room := universe.RoomList[p.room]
+	room := universe.Rooms[p.room]
 	if len(args) > 1 {
 		fmt.Println("Too many args")
 		p.WriteString("Too many args")
@@ -130,7 +128,7 @@ func (p *Player) Look(args []string) {
 
 func (p *Player) Who(args []string) {
 	gotOne := false
-	for id, pOther := range PlayerList {
+	for id, pOther := range p.universe.Players {
 		if id != p.id {
 			str_who := fmt.Sprintf("[WHO] %s\n",pOther.name)
 			p.WriteString(str_who)
@@ -145,14 +143,14 @@ func (p *Player) Who(args []string) {
 
 func (p *Player) Say(args []string) {
 	universe := p.universe
-	room := universe.RoomList[p.room]
+	room := universe.Rooms[p.room]
 	sayStim := TalkerSayStimulus{talker: p, text: strings.Join(args," ")}
 	room.stimuliBroadcast <- sayStim
 }
 
 func (p *Player) Take(args []string) {
 	universe := p.universe
-	room := universe.RoomList[p.room]
+	room := universe.Rooms[p.room]
 	if len(args) > 0 {
 		target := strings.ToLower(args[0])
 		room.interactionQueue <-
@@ -174,7 +172,7 @@ func (p *Player) Inv(args []string) {
 
 func (p *Player) GoExit(args []string) {
 	universe := p.universe
-	room := universe.RoomList[p.room]
+	room := universe.Rooms[p.room]
 	if(len(args) < 1) {
 		p.WriteString("Go usage: go [exit name]. Ex. go north")
 		return 
@@ -258,23 +256,13 @@ func (p Player) DoesPerceiveExit(s PlayerLeaveStimulus) bool {
 	return !(s.player.id == p.id)
 }
 
-func PlayerListManager(toRemove chan *Player, pList map[int]*Player) {
-	for {
-		pRemove := <- toRemove
-		pRoom := pRemove.universe.RoomList[pRemove.room]
-		RemovePlayerFromRoom(pRoom, pRemove)
-		delete(pList, pRemove.id)
-		fmt.Println("Removed", pRemove.name, "from player list")
-	}
-}
-
 func (p Player) PerceiveList() PerceiveMap {
 	// Right now, perceive people in the room, objects in the room,
 	// and objects in the player's inventory
 	var targetList []PhysicalObject
 	physObjects := make(PerceiveMap)
 	universe := p.universe
-	room := universe.RoomList[p.room]
+	room := universe.Rooms[p.room]
 	people := room.players
 	roomObjects := room.physObjects
 	invObjects := p.inventory
