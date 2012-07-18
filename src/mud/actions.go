@@ -1,7 +1,5 @@
 package mud
 
-import "fmt"
-
 type PlayerTakeAction struct {
 	InterObjectAction
 	player *Player
@@ -24,9 +22,9 @@ func (p PlayerTakeAction) Targets() []PhysicalObject {
 }
 func (p PlayerTakeAction) Source() PhysicalObject { return p.player }
 func (p PlayerTakeAction) Exec() {
-	fmt.Println("exec take",p.target,p.Source())
 	player := p.player
-	room := RoomList[player.room]
+	universe := player.universe
+	room := universe.RoomList[player.room]
 	if target, ok := player.PerceiveList()[p.userTargetIdent]; ok {
 		stim := PlayerPickupStimulus{player: player, obj: target}
 		if target.Carryable() {

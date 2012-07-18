@@ -1,7 +1,5 @@
 package mud
 
-var RoomList map[RoomID]*Room;
-
 type RoomID int
 type RoomSide int
 
@@ -27,6 +25,7 @@ type Room struct {
 	exits []RoomExitInfo
 	stimuliBroadcast chan Stimulus
 	interactionQueue chan InterObjectAction
+	universe *Universe
 }
 
 type RoomConnection interface {
@@ -148,7 +147,7 @@ func (r *Room) Broadcast(s Stimulus) {
 	r.stimuliBroadcast <- s
 }
 
-func NewBasicRoom(rid RoomID, rtext string, physObjs []PhysicalObject) *Room {
+func NewBasicRoom(universe *Universe, rid RoomID, rtext string, physObjs []PhysicalObject) *Room {
 	r := Room{id: rid, text: rtext}
 	r.stimuliBroadcast = make(chan Stimulus, 10)
 	r.interactionQueue = make(chan InterObjectAction, 10)
@@ -156,7 +155,7 @@ func NewBasicRoom(rid RoomID, rtext string, physObjs []PhysicalObject) *Room {
 	r.perceivers = make(map[int]Perceiver)
 	r.physObjects = physObjs
 	r.exits = []RoomExitInfo{}
-	RoomList[r.id] = &r
+	universe.RoomList[r.id] = &r
 
 	return &r
 }

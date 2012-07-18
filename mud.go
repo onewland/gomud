@@ -114,7 +114,7 @@ func MakeClock() *HeartbeatClock {
 	return clock
 }
 
-func MakeStupidRoom() *mud.Room {
+func MakeStupidRoom(universe *mud.Universe) *mud.Room {
 	puritan := MakePuritan()
 	theBall := Ball{}
 	theClock := MakeClock()
@@ -122,9 +122,9 @@ func MakeStupidRoom() *mud.Room {
 	ballSlice := []mud.PhysicalObject{theBall, theClock, puritan}
 	empty := []mud.PhysicalObject{}
 
-	room := mud.NewBasicRoom(1, "You are in a bedroom.", ballSlice)
+	room := mud.NewBasicRoom(universe, 1, "You are in a bedroom.", ballSlice)
 	room.AddPerceiver(puritan)
-	room2 := mud.NewBasicRoom(2, "You are in a bathroom.", empty)
+	room2 := mud.NewBasicRoom(universe, 2, "You are in a bathroom.", empty)
 	puritan.room = room
 	go mud.StimuliLoop(puritan)
 
@@ -142,11 +142,13 @@ func MakeStupidRoom() *mud.Room {
 func main() {
 	rand.Seed(time.Now().Unix())
 	listener, err := net.Listen("tcp", ":3000")
+	universe := mud.NewBasicUniverse()
 	playerRemoveChan := make(chan *mud.Player)
 	mud.PlayerList = make(map[int]*mud.Player)
-	mud.RoomList = make(map[mud.RoomID]*mud.Room)
 	idGen := UniqueIDGen()
-	theRoom := MakeStupidRoom()
+	theRoom := MakeStupidRoom(universe)
+	fmt.Println("len(rooms) =",len(universe.RoomList))
+	fmt.Println("rooms[1] =",universe.RoomList[1])
 
 	go HeartbeatLoop(mud.TimeListenerList)
 
@@ -158,7 +160,7 @@ func main() {
 		for {
 			conn, aerr := listener.Accept()
 			if aerr == nil {
-				newP := mud.AcceptConnAsPlayer(conn, idGen)
+				newP := universe.AcceptConnAsPlayer(conn, idGen)
 
 				mud.PlacePlayerInRoom(theRoom, newP)
 

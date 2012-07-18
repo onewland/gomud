@@ -1,7 +1,6 @@
 package mud
 
 import ("net"
-	"math/rand"
 	"strings"
 	"fmt"
 	"io")
@@ -17,6 +16,7 @@ type Player struct {
 	name string
 	sock net.Conn
 	inventory []PhysicalObject
+	universe *Universe
 	commandBuf chan string
 	stimuli chan Stimulus
 	quitting chan bool
@@ -49,8 +49,9 @@ func RemovePlayerFromRoom(r *Room, p *Player) {
 
 func PlacePlayerInRoom(r *Room, p *Player) {
 	oldRoomID := p.room
+	universe := p.universe
 	if oldRoomID != -1 {
-		oldRoom := RoomList[oldRoomID]
+		oldRoom := universe.RoomList[oldRoomID]
 		oldRoom.stimuliBroadcast <- 
 			PlayerLeaveStimulus{player: p}
 		RemovePlayerFromRoom(oldRoom, p)
@@ -117,11 +118,13 @@ func (p *Player) ExecCommandLoop() {
 }
 
 func (p *Player) Look(args []string) {
+	universe := p.universe
+	room := universe.RoomList[p.room]
 	if len(args) > 1 {
 		fmt.Println("Too many args")
 		p.WriteString("Too many args")
 	} else {
-		p.WriteString(RoomList[p.room].Describe(p) + "\n")
+		p.WriteString(room.Describe(p) + "\n")
 	}
 }
 
@@ -141,13 +144,15 @@ func (p *Player) Who(args []string) {
 }
 
 func (p *Player) Say(args []string) {
-	room := RoomList[p.room]
+	universe := p.universe
+	room := universe.RoomList[p.room]
 	sayStim := TalkerSayStimulus{talker: p, text: strings.Join(args," ")}
 	room.stimuliBroadcast <- sayStim
 }
 
 func (p *Player) Take(args []string) {
-	room := RoomList[p.room]
+	universe := p.universe
+	room := universe.RoomList[p.room]
 	if len(args) > 0 {
 		target := strings.ToLower(args[0])
 		room.interactionQueue <-
@@ -168,7 +173,8 @@ func (p *Player) Inv(args []string) {
 }
 
 func (p *Player) GoExit(args []string) {
-	room := RoomList[p.room]
+	universe := p.universe
+	room := universe.RoomList[p.room]
 	if(len(args) < 1) {
 		p.WriteString("Go usage: go [exit name]. Ex. go north")
 		return 
@@ -252,32 +258,10 @@ func (p Player) DoesPerceiveExit(s PlayerLeaveStimulus) bool {
 	return !(s.player.id == p.id)
 }
 
-func AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Player {
-	// Make distinct unique names randomly
-	colors := []string{"Red", "Blue", "Yellow"}
-	animals := []string{"Pony", "Fox", "Jackal"}
-	color := colors[rand.Intn(3)]
-	animal := animals[rand.Intn(3)]
-	p := new(Player)
-	p.id = idSource()
-	p.name = (color + animal)
-	p.sock = conn
-	p.quitting = make(chan bool, 1)
-	p.commandBuf = make(chan string, 10)
-	p.commandDone = make(chan bool)
-	p.stimuli = make(chan Stimulus, 5)
-	p.inventory = make([]PhysicalObject, 10)
-	p.room = -1
-	PlayerList[p.id] = p
-	fmt.Println(p.name, "joined, ID =",p.id)
-	fmt.Println(len(PlayerList), "player[s] online.")
-	return p
-}
-
 func PlayerListManager(toRemove chan *Player, pList map[int]*Player) {
 	for {
 		pRemove := <- toRemove
-		pRoom := RoomList[pRemove.room]
+		pRoom := pRemove.universe.RoomList[pRemove.room]
 		RemovePlayerFromRoom(pRoom, pRemove)
 		delete(pList, pRemove.id)
 		fmt.Println("Removed", pRemove.name, "from player list")
@@ -289,7 +273,8 @@ func (p Player) PerceiveList() PerceiveMap {
 	// and objects in the player's inventory
 	var targetList []PhysicalObject
 	physObjects := make(PerceiveMap)
-	room := RoomList[p.room]
+	universe := p.universe
+	room := universe.RoomList[p.room]
 	people := room.players
 	roomObjects := room.physObjects
 	invObjects := p.inventory
