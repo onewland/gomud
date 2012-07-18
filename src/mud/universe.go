@@ -7,6 +7,7 @@ import ("net"
 type Universe struct {
 	Players map[int]*Player
 	Rooms map[RoomID]*Room
+	TimeListeners []TimeListener
 }
 
 func NewBasicUniverse() *Universe {
@@ -31,7 +32,6 @@ func (u *Universe) AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Playe
 	p.commandDone = make(chan bool)
 	p.stimuli = make(chan Stimulus, 5)
 	p.inventory = make([]PhysicalObject, 10)
-	p.room = -1
 	p.universe = u
 	u.Players[p.id] = p
 	fmt.Println(p.name, "joined, ID =",p.id)
@@ -42,7 +42,7 @@ func (u *Universe) AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Playe
 func PlayerListManager(toRemove chan *Player, pList map[int]*Player) {
 	for {
 		pRemove := <- toRemove
-		pRoom := pRemove.universe.Rooms[pRemove.room]
+		pRoom := pRemove.room
 		RemovePlayerFromRoom(pRoom, pRemove)
 		delete(pList, pRemove.id)
 		fmt.Println("Removed", pRemove.name, "from player list")

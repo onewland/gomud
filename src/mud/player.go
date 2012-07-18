@@ -10,7 +10,7 @@ type Player struct {
 	Perceiver
 	PhysicalObject
 	id int
-	room RoomID
+	room *Room
 	name string
 	sock net.Conn
 	inventory []PhysicalObject
@@ -46,16 +46,14 @@ func RemovePlayerFromRoom(r *Room, p *Player) {
 }
 
 func PlacePlayerInRoom(r *Room, p *Player) {
-	oldRoomID := p.room
-	universe := p.universe
-	if oldRoomID != -1 {
-		oldRoom := universe.Rooms[oldRoomID]
+	oldRoom := p.room
+	if oldRoom != nil {
 		oldRoom.stimuliBroadcast <- 
 			PlayerLeaveStimulus{player: p}
 		RemovePlayerFromRoom(oldRoom, p)
 	}
 	
-	p.room = r.id
+	p.room = r
 	r.stimuliBroadcast <- PlayerEnterStimulus{player: p}
 	r.perceivers[p.id] = p
 	r.players[p.id] = *p
@@ -116,8 +114,7 @@ func (p *Player) ExecCommandLoop() {
 }
 
 func (p *Player) Look(args []string) {
-	universe := p.universe
-	room := universe.Rooms[p.room]
+	room := p.room
 	if len(args) > 1 {
 		fmt.Println("Too many args")
 		p.WriteString("Too many args")
@@ -142,15 +139,13 @@ func (p *Player) Who(args []string) {
 }
 
 func (p *Player) Say(args []string) {
-	universe := p.universe
-	room := universe.Rooms[p.room]
+	room := p.room
 	sayStim := TalkerSayStimulus{talker: p, text: strings.Join(args," ")}
 	room.stimuliBroadcast <- sayStim
 }
 
 func (p *Player) Take(args []string) {
-	universe := p.universe
-	room := universe.Rooms[p.room]
+	room := p.room
 	if len(args) > 0 {
 		target := strings.ToLower(args[0])
 		room.interactionQueue <-
@@ -171,8 +166,7 @@ func (p *Player) Inv(args []string) {
 }
 
 func (p *Player) GoExit(args []string) {
-	universe := p.universe
-	room := universe.Rooms[p.room]
+	room := p.room
 	if(len(args) < 1) {
 		p.WriteString("Go usage: go [exit name]. Ex. go north")
 		return 
@@ -261,8 +255,7 @@ func (p Player) PerceiveList() PerceiveMap {
 	// and objects in the player's inventory
 	var targetList []PhysicalObject
 	physObjects := make(PerceiveMap)
-	universe := p.universe
-	room := universe.Rooms[p.room]
+	room := p.room
 	people := room.players
 	roomObjects := room.physObjects
 	invObjects := p.inventory

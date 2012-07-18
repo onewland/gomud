@@ -118,7 +118,7 @@ func MakeStupidRoom(universe *mud.Universe) *mud.Room {
 	puritan := MakePuritan()
 	theBall := Ball{}
 	theClock := MakeClock()
-	mud.TimeListenerList = []mud.TimeListener{theClock}
+	universe.TimeListeners = []mud.TimeListener{theClock}
 	ballSlice := []mud.PhysicalObject{theBall, theClock, puritan}
 	empty := []mud.PhysicalObject{}
 
@@ -148,7 +148,7 @@ func main() {
 	theRoom := MakeStupidRoom(universe)
 	fmt.Println("len(rooms) =",len(universe.Rooms))
 
-	go HeartbeatLoop(mud.TimeListenerList)
+	go HeartbeatLoop(universe.TimeListeners)
 
 	if err == nil {
 		go mud.PlayerListManager(playerRemoveChan, universe.Players)
