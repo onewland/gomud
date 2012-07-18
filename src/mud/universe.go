@@ -17,7 +17,7 @@ func NewBasicUniverse() *Universe {
 }
 
 func (u *Universe) AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Player {
-	// Make distinct unique names randomly
+	// Make distinct names randomly
 	colors := []string{"Red", "Blue", "Yellow"}
 	animals := []string{"Pony", "Fox", "Jackal"}
 	color := colors[rand.Intn(3)]
