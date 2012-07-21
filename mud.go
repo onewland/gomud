@@ -55,6 +55,7 @@ type FlipFlop struct {
 	mud.NPC
 	mud.Persister
 	room *mud.Room
+	universe *mud.Universe
 	stimuli chan mud.Stimulus
 	id int
 	lastText string
@@ -89,9 +90,15 @@ func (f FlipFlop) StimuliChannel() chan mud.Stimulus {
 func (f FlipFlop) Visible() bool { return true }
 func (f FlipFlop) Description() string { return f.Name() }
 func (f FlipFlop) Carryable() bool { return false }
-func (f FlipFlop) Save() (string, bool) {
-	finished := false
-	return "x",finished
+func (f FlipFlop) PersistentValues() map[string]string {
+	vals := make(map[string]string)
+	vals["id"] = strconv.Itoa(f.ID())
+	vals["bling"] = f.lastText
+	return vals
+}
+
+func (f FlipFlop) Save() string {
+	return f.universe.Store.SaveStructure("flipFlop",f.PersistentValues())
 }
 
 type Puritan struct {
@@ -144,9 +151,10 @@ func (p Puritan) Visible() bool { return true }
 func (p Puritan) Description() string { return p.Name() }
 func (p Puritan) Carryable() bool { return false }
 
-func MakeFlipFlop() *FlipFlop {
+func MakeFlipFlop(u *mud.Universe) *FlipFlop {
 	ff := new(FlipFlop)
 	ff.id = 101
+	ff.universe = u
 	ff.lastText = "Unchanged."
 	ff.stimuli = make(chan mud.Stimulus, 5)
 	return ff
@@ -167,9 +175,10 @@ func MakeClock() *HeartbeatClock {
 
 func MakeStupidRoom(universe *mud.Universe) *mud.Room {
 	puritan := MakePuritan()
-	ff := MakeFlipFlop()
+	ff := MakeFlipFlop(universe)
 	theBall := Ball{}
 	theClock := MakeClock()
+	universe.Persistents = []mud.Persister{ff}
 	universe.TimeListeners = []mud.TimeListener{theClock}
 	ballSlice := []mud.PhysicalObject{theBall, theClock, puritan, ff}
 	empty := []mud.PhysicalObject{}
@@ -202,6 +211,7 @@ func main() {
 	theRoom := MakeStupidRoom(universe)
 	fmt.Println("len(rooms) =",len(universe.Rooms))
 
+	go mud.HandlePersist(universe.Persistents)
 	go HeartbeatLoop(universe.TimeListeners)
 
 	if err == nil {

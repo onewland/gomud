@@ -9,6 +9,8 @@ type Universe struct {
 	Players map[int]*Player
 	Rooms map[RoomID]*Room
 	TimeListeners []TimeListener
+	Persistents []Persister
+	Store *TinyDB
 	dbConn redis.Client
 }
 
@@ -22,6 +24,7 @@ func NewBasicUniverse() *Universe {
 		panic(err)
 	} else {
 		u.dbConn = client
+		u.Store = NewTinyDB(client)
 	}
 	return u
 }
