@@ -1,17 +1,15 @@
 package mud
 
-import ("time"
-	"fmt")
+import ("time")
 
 type Persister interface {
 	PersistentValues() map[string]string
 	Save() string
 }
 
-func HandlePersist(persistents []Persister) {
-	fmt.Println("persistents = ", persistents)
+func (u *Universe) HandlePersist() {
 	for {
-		for _,p := range(persistents) {
+		for _,p := range(u.Persistents) {
 			go p.Save()
 		}
 		time.Sleep(300 * time.Millisecond)

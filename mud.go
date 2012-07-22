@@ -72,7 +72,7 @@ func (f FlipFlop) TextHandles() []string { return []string{} }
 func (f *FlipFlop) HandleStimulus(s mud.Stimulus) {
 	scast, ok := s.(mud.TalkerSayStimulus)
 	if !ok {
-		panic("Puritan should only receive TalkerSayStimulus")
+		panic("FF should only receive TalkerSayStimulus")
 	} else {
 		args := strings.SplitN(scast.Text()," ",3)
 		fmt.Println("FF args:",args)
@@ -92,13 +92,19 @@ func (f FlipFlop) Description() string { return f.Name() }
 func (f FlipFlop) Carryable() bool { return false }
 func (f FlipFlop) PersistentValues() map[string]string {
 	vals := make(map[string]string)
-	vals["id"] = strconv.Itoa(f.ID())
+	if(f.ID() > 0) {
+		vals["id"] = strconv.Itoa(f.ID())
+	}
 	vals["bling"] = f.lastText
 	return vals
 }
 
-func (f FlipFlop) Save() string {
-	return f.universe.Store.SaveStructure("flipFlop",f.PersistentValues())
+func (f *FlipFlop) Save() string {
+	outID := f.universe.Store.SaveStructure("flipFlop",f.PersistentValues())	
+	if(f.id == 0) {
+		f.id, _ = strconv.Atoi(outID)
+	}
+	return outID
 }
 
 type Puritan struct {
@@ -153,10 +159,11 @@ func (p Puritan) Carryable() bool { return false }
 
 func MakeFlipFlop(u *mud.Universe) *FlipFlop {
 	ff := new(FlipFlop)
-	ff.id = 101
 	ff.universe = u
 	ff.lastText = "Unchanged."
 	ff.stimuli = make(chan mud.Stimulus, 5)
+	u.Persistents = append(u.Persistents, ff)
+	go mud.StimuliLoop(ff)
 	return ff
 }
 
@@ -164,6 +171,7 @@ func MakePuritan() *Puritan {
 	puritan := new(Puritan)
 	puritan.id = 100
 	puritan.stimuli = make(chan mud.Stimulus, 5)
+	go mud.StimuliLoop(puritan)
 	return puritan
 }
 
@@ -171,6 +179,11 @@ func MakeClock() *HeartbeatClock {
 	clock := new(HeartbeatClock)
 	clock.tPing = make(chan int)
 	return clock
+}
+
+func BuildFFInRoom(u *mud.Universe, p *mud.Player, args []string) {
+	ff := MakeFlipFlop(u)
+	ff.lastText = strings.Join(args, " ")
 }
 
 func MakeStupidRoom(universe *mud.Universe) *mud.Room {
@@ -188,8 +201,6 @@ func MakeStupidRoom(universe *mud.Universe) *mud.Room {
 	room.AddPerceiver(ff)
 	room2 := mud.NewBasicRoom(universe, 2, "You are in a bathroom.", empty)
 	puritan.room = room
-	go mud.StimuliLoop(puritan)
-	go mud.StimuliLoop(ff)
 
 	mud.ConnectEastWest(room, room2)
 
@@ -206,12 +217,13 @@ func main() {
 	rand.Seed(time.Now().Unix())
 	listener, err := net.Listen("tcp", ":3000")
 	universe := mud.NewBasicUniverse()
+	universe.Maker = BuildFFInRoom
 	playerRemoveChan := make(chan *mud.Player)
 	idGen := UniqueIDGen()
 	theRoom := MakeStupidRoom(universe)
 	fmt.Println("len(rooms) =",len(universe.Rooms))
 
-	go mud.HandlePersist(universe.Persistents)
+	go universe.HandlePersist()
 	go HeartbeatLoop(universe.TimeListeners)
 
 	if err == nil {

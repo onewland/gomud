@@ -42,7 +42,7 @@ func init() {
 
 func RemovePlayerFromRoom(r *Room, p *Player) {
 	delete(r.players, p.id)
-	delete(r.perceivers, p.id)
+	r.RemovePerceiver(p)
 }
 
 func PlacePlayerInRoom(r *Room, p *Player) {
@@ -55,7 +55,7 @@ func PlacePlayerInRoom(r *Room, p *Player) {
 	
 	p.room = r
 	r.stimuliBroadcast <- PlayerEnterStimulus{player: p}
-	r.perceivers[p.id] = p
+	r.AddPerceiver(p)
 	r.players[p.id] = *p
 }
 
@@ -106,6 +106,8 @@ func (p *Player) ExecCommandLoop() {
 				p.Inv(nextCommandArgs)
 			} else if nextCommandRoot == "quit" {
 				p.Quit(nextCommandArgs)
+			} else if nextCommandRoot == "make" {
+				p.Make(nextCommandArgs)
 			}
 		}
 		p.WriteString("> ")
@@ -189,9 +191,12 @@ func (p *Player) GoExit(args []string) {
 }
 
 func (p *Player) Quit(args[] string) {
-	fmt.Println("p.quitting start")
 	p.quitting <- true
-	fmt.Println("p.quitting end")
+}
+
+func (p *Player) Make(args[] string) {
+	fmt.Println("[WARNING] Make command should not be in production")
+	p.universe.Maker(p.universe, p, args)
 }
 
 func (p *Player) ReadLoop(playerRemoveChan chan *Player) {

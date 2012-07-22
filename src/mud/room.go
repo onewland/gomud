@@ -1,5 +1,7 @@
 package mud
 
+import "fmt"
+
 type RoomID int
 type RoomSide int
 
@@ -20,7 +22,7 @@ type Room struct {
 	id RoomID
 	text string
 	players map[int]Player
-	perceivers map[int]Perceiver
+	perceivers []Perceiver
 	physObjects []PhysicalObject
 	exits []RoomExitInfo
 	stimuliBroadcast chan Stimulus
@@ -140,7 +142,23 @@ func (r *Room) DescribePlayers(toPlayer *Player) string {
 }
 
 func (r *Room) AddPerceiver(p Perceiver) {
-	r.perceivers[p.ID()] = p
+	r.perceivers = append(r.perceivers, p)
+	fmt.Println("[add] new perceivers = ",r.perceivers)
+}
+
+func (r *Room) RemovePerceiver(p Perceiver) {
+	for i,listP := range(r.perceivers) {
+		if p == listP {
+			if len(r.perceivers) > 1 {
+				perceivers := append(r.perceivers[:i],r.perceivers[i+1:]...)
+				r.perceivers = perceivers
+			} else {
+				r.perceivers = []Perceiver{}
+			}
+			fmt.Println("[rm] new perceivers = ",r.perceivers)
+			break
+		}
+	}
 }
 
 func (r *Room) Broadcast(s Stimulus) {
@@ -152,7 +170,7 @@ func NewBasicRoom(universe *Universe, rid RoomID, rtext string, physObjs []Physi
 	r.stimuliBroadcast = make(chan Stimulus, 10)
 	r.interactionQueue = make(chan InterObjectAction, 10)
 	r.players = make(map[int]Player)
-	r.perceivers = make(map[int]Perceiver)
+	r.perceivers = []Perceiver{}
 	r.physObjects = physObjs
 	r.exits = []RoomExitInfo{}
 	universe.Rooms[r.id] = &r

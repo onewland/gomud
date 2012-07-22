@@ -25,7 +25,7 @@ func (t *TinyDB) RedisSet(k string, v string) {
 
 func (t *TinyDB) SaveStructure(className string, vals map[string]string) string {
 	var returnId string
-	if theId, ok := vals["id"]; ok {
+	if theId, ok := vals["id"]; ok && theId != "" {
 		// Already exists, just update data
 		returnId = theId
 	} else {

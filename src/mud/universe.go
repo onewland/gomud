@@ -5,11 +5,14 @@ import ("net"
 	"math/rand"
         "redis")
 
+type MakeHandler func (*Universe, *Player, []string)
+
 type Universe struct {
 	Players map[int]*Player
 	Rooms map[RoomID]*Room
 	TimeListeners []TimeListener
 	Persistents []Persister
+	Maker MakeHandler
 	Store *TinyDB
 	dbConn redis.Client
 }
