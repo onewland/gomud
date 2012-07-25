@@ -184,6 +184,9 @@ func MakeClock() *HeartbeatClock {
 func BuildFFInRoom(u *mud.Universe, p *mud.Player, args []string) {
 	ff := MakeFlipFlop(u)
 	ff.lastText = strings.Join(args, " ")
+	room := p.Room()
+	room.AddPerceiver(ff)
+	room.AddPhysObj(ff)
 }
 
 func MakeStupidRoom(universe *mud.Universe) *mud.Room {

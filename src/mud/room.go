@@ -141,6 +141,11 @@ func (r *Room) DescribePlayers(toPlayer *Player) string {
 	return objTextBuf
 }
 
+func (r *Room) AddPhysObj(p PhysicalObject) {
+	r.physObjects = append(r.physObjects, p)
+	fmt.Println("[add] new physObjects = ",r.physObjects)
+}
+
 func (r *Room) AddPerceiver(p Perceiver) {
 	r.perceivers = append(r.perceivers, p)
 	fmt.Println("[add] new perceivers = ",r.perceivers)

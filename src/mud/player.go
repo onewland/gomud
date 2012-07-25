@@ -40,6 +40,10 @@ func init() {
 	colorMap["&;"] = "\x1b[0m"
 }
 
+func (p Player) Room() *Room {
+	return p.room
+}
+
 func RemovePlayerFromRoom(r *Room, p *Player) {
 	delete(r.players, p.id)
 	r.RemovePerceiver(p)

@@ -35,6 +35,8 @@ func (t *TinyDB) SaveStructure(className string, vals map[string]string) string 
 			newIdStr := strconv.Itoa(int(newId))
 			vals["id"] = newIdStr
 			returnId = newIdStr
+		} else {
+			panic(err)
 		}
 	}
 
