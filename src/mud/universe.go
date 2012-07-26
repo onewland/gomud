@@ -9,7 +9,7 @@ type MakeHandler func (*Universe, *Player, []string)
 
 type Universe struct {
 	Players map[int]*Player
-	Rooms map[RoomID]*Room
+	Rooms map[int]*Room
 	TimeListeners []TimeListener
 	Persistents []Persister
 	Maker MakeHandler
@@ -20,7 +20,7 @@ type Universe struct {
 func NewBasicUniverse() *Universe {
 	u := new(Universe)
 	u.Players = make(map[int]*Player)
-	u.Rooms = make(map[RoomID]*Room)
+	u.Rooms = make(map[int]*Room)
 	spec := redis.DefaultSpec().Db(3)
 	client, err := redis.NewSynchClientWithSpec(spec)
 	if(err != nil) {

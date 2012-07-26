@@ -90,8 +90,8 @@ func (f FlipFlop) StimuliChannel() chan mud.Stimulus {
 func (f FlipFlop) Visible() bool { return true }
 func (f FlipFlop) Description() string { return f.Name() }
 func (f FlipFlop) Carryable() bool { return false }
-func (f FlipFlop) PersistentValues() map[string]string {
-	vals := make(map[string]string)
+func (f FlipFlop) PersistentValues() map[string]interface{} {
+	vals := make(map[string]interface{})
 	if(f.ID() > 0) {
 		vals["id"] = strconv.Itoa(f.ID())
 	}
@@ -105,6 +105,10 @@ func (f *FlipFlop) Save() string {
 		f.id, _ = strconv.Atoi(outID)
 	}
 	return outID
+}
+
+func (f *FlipFlop) DBFullName() string {
+	return fmt.Sprintf("flipFlop:%d", f.id)
 }
 
 type Puritan struct {
@@ -187,6 +191,7 @@ func BuildFFInRoom(u *mud.Universe, p *mud.Player, args []string) {
 	room := p.Room()
 	room.AddPerceiver(ff)
 	room.AddPhysObj(ff)
+	room.AddPersistent(ff)
 }
 
 func MakeStupidRoom(universe *mud.Universe) *mud.Room {

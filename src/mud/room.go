@@ -1,6 +1,7 @@
 package mud
 
-import "fmt"
+import ("fmt"
+	"strconv")
 
 type RoomID int
 type RoomSide int
@@ -19,10 +20,12 @@ type RoomExitInfo struct {
 }
 
 type Room struct {
-	id RoomID
+	Persister
+	id int
 	text string
 	players map[int]Player
 	perceivers []Perceiver
+	Persistents []Persister
 	physObjects []PhysicalObject
 	exits []RoomExitInfo
 	stimuliBroadcast chan Stimulus
@@ -166,19 +169,57 @@ func (r *Room) RemovePerceiver(p Perceiver) {
 	}
 }
 
+func (r *Room) AddPersistent(p Persister) {
+	r.Persistents = append(r.Persistents, p)
+}
+
+func (r *Room) RemovePersistent(p Persister) {
+	for i,listP := range(r.Persistents) {
+		if p == listP {
+			if len(r.Persistents) > 1 {
+				perceivers := append(r.Persistents[:i],r.Persistents[i+1:]...)
+				r.Persistents = perceivers
+			} else {
+				r.Persistents = []Persister{}
+			}
+			fmt.Println("[rm] new Persistents = ",r.Persistents)
+			break
+		}
+	}
+}
+
 func (r *Room) Broadcast(s Stimulus) {
 	r.stimuliBroadcast <- s
 }
 
-func NewBasicRoom(universe *Universe, rid RoomID, rtext string, physObjs []PhysicalObject) *Room {
-	r := Room{id: rid, text: rtext}
+func (r *Room) PersistentValues() map[string]interface{} {
+	vals := make(map[string]interface{})
+	if(r.id > 0) {
+		vals["id"] = strconv.Itoa(r.id)
+	}
+	vals["persisters"] = r.Persistents
+	return vals
+}
+
+func (r *Room) Save() string {
+	outID := r.universe.Store.SaveStructure("room",r.PersistentValues())
+	if(r.id == 0) {
+		r.id, _ = strconv.Atoi(outID)
+	}
+	return outID
+}
+
+func NewBasicRoom(universe *Universe, rid int, rtext string, physObjs []PhysicalObject) *Room {
+	r := Room{id: rid, text: rtext, universe: universe}
 	r.stimuliBroadcast = make(chan Stimulus, 10)
 	r.interactionQueue = make(chan InterObjectAction, 10)
 	r.players = make(map[int]Player)
 	r.perceivers = []Perceiver{}
+	r.Persistents = []Persister{}
 	r.physObjects = physObjs
 	r.exits = []RoomExitInfo{}
 	universe.Rooms[r.id] = &r
+	universe.Persistents = append(universe.Persistents, &r)
 
 	return &r
 }

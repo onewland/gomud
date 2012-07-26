@@ -3,7 +3,8 @@ package mud
 import ("time")
 
 type Persister interface {
-	PersistentValues() map[string]string
+	DBFullName() string
+	PersistentValues() map[string]interface{}
 	Save() string
 }
 
