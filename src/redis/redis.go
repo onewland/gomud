@@ -94,6 +94,7 @@ package redis
 
 import (
 	"flag"
+	"os"
 	"runtime";
 )
 
@@ -536,15 +537,23 @@ type AsyncClient interface {
 // for this package are all prefixed by "redis:" to prevent possible name collisions.
 //
 func init() {
-		runtime.GOMAXPROCS(2);
-		flag.Parse();
+	runtime.GOMAXPROCS(2);
+	flagset := flag.NewFlagSet("debug-only", flag.ContinueOnError)
+	flagset.Usage = func(){};
+
+	// redis:d
+	//
+	// global debug flag for redis package components.
+	// 
+	// TEMP: should default to false
+	_debug = flagset.Bool("redis:d", false, "debug flag for go-redis") 
+
+	flagset.Parse(os.Args[1:]);
 }
 
-// redis:d
-//
-// global debug flag for redis package components.
-// 
-var _debug *bool = flag.Bool("redis:d", false, "debug flag for go-redis") // TEMP: should default to false
+
+var _debug *bool // attached to redis:d flag
+
 func debug() bool {
 	return *_debug
 }
