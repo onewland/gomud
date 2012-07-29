@@ -8,22 +8,6 @@ import ("fmt"
 	"time"
 	"mud")
 
-/*
- * Beginnings of a MU* type server
- * 
- * Initially supporting: 
- * 1. Players - who can see each other, talk to each other
- * 2. Objects - visible or not, carry-able or not
- * 3. Simple commands (look, take)
- * 4. Rooms
- * 5. Heartbeat
- *
- * Initially not supporting:
- * - Persistence of state
- * - Combat
- * - NPCs
- */
-
 type Ball struct { mud.PhysicalObject }
 
 func (b Ball) Visible() bool { return true }
