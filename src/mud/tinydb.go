@@ -34,6 +34,10 @@ func (t *TinyDB) RedisSet(k string, v interface{}) {
 	}
 }
 
+func (t *TinyDB) LoadStructure(fullyQualifiedID string) (interface{}, string) {
+	return t, ""
+}
+
 func (t *TinyDB) SaveStructure(className string, vals map[string]interface{}) string {
 	var returnId string
 	if theId, ok := vals["id"].(string); ok && theId != "" {
@@ -56,4 +60,8 @@ func (t *TinyDB) SaveStructure(className string, vals map[string]interface{}) st
 	}
 	
 	return returnId
+}
+
+func (t *TinyDB) Flush() {
+	t.dbConn.Flushdb()
 }

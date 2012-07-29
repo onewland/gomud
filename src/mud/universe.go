@@ -54,6 +54,10 @@ func (u *Universe) AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Playe
 	return p
 }
 
+func (u *Universe) ClearDB() {
+	u.Store.Flush()
+}
+
 func PlayerListManager(toRemove chan *Player, pList map[int]*Player) {
 	for {
 		pRemove := <- toRemove
