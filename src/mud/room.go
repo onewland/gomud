@@ -5,7 +5,8 @@ import ("fmt"
 
 func init() {
 	PersistentKeys["room"] = []string{ "id", "text", "persisters" }
-	PersistentKeys["roomConnect"] = []string{ "id", "aExitName", 
+	PersistentKeys["roomConnect"] = []string{ 
+		"id", "aExitName", 
 		"bExitName", "roomAId", "roomBId" }
 }
 
