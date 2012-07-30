@@ -5,6 +5,7 @@ import ("redis"
 	"strings"
 	"fmt")
 
+type Pvals map[string]interface{}
 type TinyDB struct {
 	dbConn redis.Client
 }
@@ -34,8 +35,44 @@ func (t *TinyDB) RedisSet(k string, v interface{}) {
 	}
 }
 
-func (t *TinyDB) LoadStructure(fullyQualifiedID string) (interface{}, string) {
-	return t, ""
+func SMembersAsString(mems [][]byte) []string {
+	members := make([]string,len(mems))
+	for i,x := range(mems) { members[i] = string(x) }
+	return members
+}
+
+func (t *TinyDB) LoadStructure(keys []string, fullDbUrl string) Pvals {
+	vals := make(Pvals)
+	for _,key := range(keys) {
+		keyFull := FieldJoin(":",fullDbUrl,key)
+		dbType, _ := t.dbConn.Type(keyFull)
+		switch(dbType) {
+		case redis.RT_STRING:
+			val, _ := t.dbConn.Get(keyFull)
+			vals[key] = string(val)
+		case redis.RT_SET:
+			mems, _ := t.dbConn.Smembers(keyFull)
+			vals[key] = SMembersAsString(mems)
+		case redis.RT_NONE:
+			fmt.Println("[WARN] persistent key expected but not found:",keyFull)
+		default:
+			panic("Unrecognized value type in Redis middleware")
+		}
+	}
+	return vals
+}
+
+func (t *TinyDB) AddToGlobalSet(key string, value string) {
+	t.dbConn.Sadd(key, []byte(value))
+}
+
+func (t *TinyDB) RemoveFromGlobalSet(key string, value string) {
+	t.dbConn.Srem(key, []byte(value))
+}
+
+func (t *TinyDB) GlobalSetGet(key string) []string {
+	mems, _ := t.dbConn.Smembers(key)
+	return SMembersAsString(mems)
 }
 
 func (t *TinyDB) SaveStructure(className string, vals map[string]interface{}) string {

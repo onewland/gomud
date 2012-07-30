@@ -58,6 +58,10 @@ func (u *Universe) ClearDB() {
 	u.Store.Flush()
 }
 
+func (u *Universe) AddPersistent(p Persister) {
+	u.Persistents = append(u.Persistents, p)
+}
+
 func PlayerListManager(toRemove chan *Player, pList map[int]*Player) {
 	for {
 		pRemove := <- toRemove

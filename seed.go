@@ -1,6 +1,8 @@
 package main
 
-import "mud"
+import ("mud"
+	"strconv"
+	"fmt")
 
 func MakePuritan() *Puritan {
 	puritan := new(Puritan)
@@ -33,8 +35,8 @@ func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 	room2 := mud.NewBasicRoom(universe, 2, "You are in a bathroom.", empty)
 	puritan.room = room
 
-	mud.ConnectEastWest(room, room2)
-
+	src := mud.ConnectEastWest(room, room2)
+	universe.AddPersistent(src)
 	go room.FanOutBroadcasts()
 	go room2.FanOutBroadcasts()
 	go room.ActionQueue()
@@ -45,5 +47,22 @@ func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 }
 
 func LoadStupidRooms(universe *mud.Universe) *mud.Room {
-	return nil
+	roomIds := universe.Store.GlobalSetGet("rooms")
+	roomConnIds := universe.Store.GlobalSetGet("roomConnects")
+	for _, roomId := range(roomIds) {
+		if idNo, err := strconv.Atoi(roomId); err == nil {
+			mud.LoadRoom(universe, idNo)
+		} else {
+			fmt.Println("[warn] strange roomId",roomId)
+		}
+	}
+
+	for _, roomIdConn := range(roomConnIds) {
+		if idNo, err := strconv.Atoi(roomIdConn); err == nil {
+			mud.LoadRoomConn(universe, idNo)
+		} else {
+			fmt.Println("[warn] strange roomConnId",roomIdConn)
+		}
+	}
+	return universe.Rooms[1]
 }

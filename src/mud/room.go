@@ -3,6 +3,12 @@ package mud
 import ("fmt"
 	"strconv")
 
+func init() {
+	PersistentKeys["room"] = []string{ "id", "text", "persisters" }
+	PersistentKeys["roomConnect"] = []string{ "id", "aExitName", 
+		"bExitName", "roomAId", "roomBId" }
+}
+
 type RoomID int
 type RoomSide int
 
@@ -41,7 +47,9 @@ type RoomConnection interface {
 }
 
 type SimpleRoomConnection struct {
+	Persister
 	RoomConnection
+	id int
 	roomA, roomB *Room
 	aExitName, bExitName string
 }
@@ -50,6 +58,46 @@ func (rc SimpleRoomConnection) RoomA() *Room { return rc.roomA }
 func (rc SimpleRoomConnection) RoomB() *Room { return rc.roomB }
 func (rc SimpleRoomConnection) AExitName() string { return rc.aExitName }
 func (rc SimpleRoomConnection) BExitName() string { return rc.bExitName }
+
+func (rc SimpleRoomConnection) PersistentValues() map[string]interface{} {
+	vals := make(map[string]interface{})
+	if(rc.id > 0) {
+		vals["id"] = strconv.Itoa(rc.id)
+	}
+	vals["roomAId"] = strconv.Itoa(rc.roomA.id)
+	vals["roomBId"] = strconv.Itoa(rc.roomB.id)
+	vals["aExitName"] = rc.aExitName
+	vals["bExitName"] = rc.bExitName
+	return vals
+}
+
+func (rc *SimpleRoomConnection) Save() string {
+	universe := rc.roomA.universe
+	outID := universe.Store.SaveStructure("roomConnect",rc.PersistentValues())
+	if(rc.id == 0) {
+		rc.id, _ = strconv.Atoi(outID)
+		universe.Store.AddToGlobalSet("roomConnects", outID)
+	}
+	return outID
+}
+
+func LoadRoomConn(universe *Universe, id int) *SimpleRoomConnection {
+	fmt.Println("Entering LoadRoomConn")
+	vals := universe.Store.LoadStructure(PersistentKeys["roomConnect"],
+		FieldJoin(":","roomConnect",strconv.Itoa(id)))
+	roomAIdStr, _ := vals["roomAId"].(string)
+	roomBIdStr, _ := vals["roomAId"].(string)
+	aExitName,_ := vals["aExitName"].(string)
+	bExitName,_ := vals["bExitName"].(string)
+	cc := SimpleRoomConnectCreator(aExitName,bExitName)
+	conn := ConnectWithConnCreator(cc)
+	roomAId,_ := strconv.Atoi(roomAIdStr)
+	roomBId,_ := strconv.Atoi(roomBIdStr)
+	rc := conn(universe.Rooms[roomAId],universe.Rooms[roomBId])
+	rc.id = id
+	universe.AddPersistent(rc)
+	return rc
+}
 
 func SimpleRoomConnectCreator(a string, b string) RoomConnCreator {
 	return func() *SimpleRoomConnection {
@@ -197,6 +245,7 @@ func (r *Room) PersistentValues() map[string]interface{} {
 	if(r.id > 0) {
 		vals["id"] = strconv.Itoa(r.id)
 	}
+	vals["text"] = r.text
 	vals["persisters"] = r.Persistents
 	return vals
 }
@@ -206,7 +255,19 @@ func (r *Room) Save() string {
 	if(r.id == 0) {
 		r.id, _ = strconv.Atoi(outID)
 	}
+	r.universe.Store.AddToGlobalSet("rooms", outID)
 	return outID
+}
+
+func LoadRoom(universe *Universe, id int) *Room {
+	vals := universe.Store.LoadStructure(PersistentKeys["room"],
+		FieldJoin(":","room",strconv.Itoa(id)))
+	fmt.Println("LoadRoom vals",vals)
+	if textStr, ok := vals["text"].(string); ok {
+		r := NewBasicRoom(universe, id, textStr, []PhysicalObject{})
+		return r
+	}
+	return nil
 }
 
 func NewBasicRoom(universe *Universe, rid int, rtext string, physObjs []PhysicalObject) *Room {

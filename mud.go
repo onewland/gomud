@@ -34,6 +34,7 @@ func main() {
 	} else if(*flagUseLoad) {
 		fmt.Println("Loading Universe")
 		theRoom = LoadStupidRooms(universe)
+		fmt.Println("theRoom",theRoom)
 	}
 
 	fmt.Println("len(rooms) =",len(universe.Rooms))
