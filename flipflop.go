@@ -5,6 +5,11 @@ import ("mud"
 	"fmt"
 	"strconv")
 
+func init() {
+	mud.Loaders["flipFlop"] = LoadFlipFlop
+	mud.PersistentKeys["flipFlop"] = []string{ "id", "bling" }
+}
+
 type FlipFlop struct {
 	mud.NPC
 	mud.Persister
@@ -19,8 +24,9 @@ func (f FlipFlop) ID() int { return f.id }
 func (f FlipFlop) Name() string { return f.lastText }
 // Only respond to Talk stimulus to copy them
 func (f FlipFlop) DoesPerceive(s mud.Stimulus) bool {
-	_, ok := s.(mud.TalkerSayStimulus)
-	return ok
+	fmt.Println("DoesPerceive entered");
+	_, isSay := s.(mud.TalkerSayStimulus)
+	return isSay
 }
 func (f FlipFlop) TextHandles() []string { return []string{} }
 func (f *FlipFlop) HandleStimulus(s mud.Stimulus) {
@@ -82,4 +88,15 @@ func BuildFFInRoom(u *mud.Universe, p *mud.Player, args []string) {
 	room.AddPerceiver(ff)
 	room.AddPhysObj(ff)
 	room.AddPersistent(ff)
+}
+
+func LoadFlipFlop(u *mud.Universe, id int) interface{} {
+	var ok bool
+	vals := u.Store.LoadStructure(mud.PersistentKeys["flipFlop"],
+		mud.FieldJoin(":","flipFlop",strconv.Itoa(id)))
+	ff := MakeFlipFlop(u)
+	ff.id = id
+	ff.lastText, ok = vals["bling"].(string)
+	if !ok { panic("flipFlop:bling not string") }
+	return ff
 }

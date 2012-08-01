@@ -140,6 +140,7 @@ func (r *Room) FanOutBroadcasts() {
 	for {
 		broadcast := <- r.stimuliBroadcast
 		for _,p := range r.perceivers { 
+			fmt.Println("fanning broadcast to ",p)
 			p.StimuliChannel() <- broadcast 
 		}
 	}
@@ -266,6 +267,18 @@ func LoadRoom(universe *Universe, id int) *Room {
 	fmt.Println("LoadRoom vals",vals)
 	if textStr, ok := vals["text"].(string); ok {
 		r := NewBasicRoom(universe, id, textStr, []PhysicalObject{})
+		if persisterIds, ok := vals["persisters"].([]string); ok {
+			for _,pid := range(persisterIds) {
+				p := LoadArbitrary(universe, pid)
+				pAsPhysObj, _ := p.(PhysicalObject)
+				pAsPersist, _ := p.(Persister)
+				pAsPerceiver, _ := p.(Perceiver)
+				r.AddPersistent(pAsPersist)
+				r.AddPhysObj(pAsPhysObj)
+				r.AddPerceiver(pAsPerceiver)
+			}
+		}
+		go r.FanOutBroadcasts()
 		return r
 	}
 	return nil
