@@ -31,11 +31,14 @@ A PhysicalObject is an object that occupies space and exists at a particular
 geographic location. It can be visible or not, carryable or not. Importantly,
 all `Player`s are `PhysicalObject`s
 
-### Persister
-A Persister is an instance, of nature undefined, that has extemporaneous value
- saved to the database.
+### Persister 
+A Persister is an instance, of nature undefined, that has 
+extemporaneous/dynamic value saved to the database.
 
 ### Perceivers and Stimuli
+Perceivers react to the world and actions around them. Players are themselves
+`Perceiver`s and things like speech and entry/exit are delegated by how they
+receive Stimuli. Stimuli can be custom-designed and generated
 
 ### Room
 Rooms contain PhysicalObjects, Persisters, and Perceivers and persist
@@ -61,3 +64,7 @@ be in the base gomud/ directory.
 `FlipFlop` is an example class showing how to create a
 persistent object that responds to the `PlayerSayStimulus` without
 modifying any
+
+### HeartbeatClock
+`HeartbeatClock` is an example class showing how to create an object
+that is dependent on the Heartbeat function.
