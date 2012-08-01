@@ -270,12 +270,13 @@ func LoadRoom(universe *Universe, id int) *Room {
 		if persisterIds, ok := vals["persisters"].([]string); ok {
 			for _,pid := range(persisterIds) {
 				p := LoadArbitrary(universe, pid)
-				pAsPhysObj, _ := p.(PhysicalObject)
-				pAsPersist, _ := p.(Persister)
-				pAsPerceiver, _ := p.(Perceiver)
-				r.AddPersistent(pAsPersist)
-				r.AddPhysObj(pAsPhysObj)
-				r.AddPerceiver(pAsPerceiver)
+				pAsPhysObj, isPhysical := p.(PhysicalObject)
+				pAsPersist, persists := p.(Persister)
+				pAsPerceiver, perceives := p.(Perceiver)
+
+				if(isPhysical) { r.AddPhysObj(pAsPhysObj) }
+				if(persists) { r.AddPersistent(pAsPersist) }
+				if(perceives) { r.AddPerceiver(pAsPerceiver) }
 			}
 		}
 		go r.FanOutBroadcasts()

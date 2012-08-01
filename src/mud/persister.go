@@ -1,6 +1,8 @@
 package mud
 
-import ("time"; "strings"; "strconv";)
+import ("time" 
+	"strings" 
+	"strconv")
 
 type Loader func(universe *Universe, id int) interface{}
 
