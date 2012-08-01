@@ -11,6 +11,9 @@ Run `go install mud`.
 Run `go build` in the base directory of gomud.
 
 ## Usage
+Redis must be running on a standard port and have at least 4 DBs. Right now,
+DB 3 is used and this is not configurable.
+
 On the first run, use `./gomud -seed`. This command flushes the
 database and then sets up defaults in "seed.go". From then on, a plain
 run of `./gomud` or `./gomud -load` will load the current state of
@@ -63,7 +66,9 @@ be in the base gomud/ directory.
 ### FlipFlop 
 `FlipFlop` is an example class showing how to create a
 persistent object that responds to the `PlayerSayStimulus` without
-modifying any
+modifying any internal (src/mud/) code. It responds to a person saying
+"bling set [text]" by changing its description to `[text]`. This change
+is persisted in the field flipFlop:[id]:bling
 
 ### HeartbeatClock
 `HeartbeatClock` is an example class showing how to create an object
