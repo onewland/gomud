@@ -28,15 +28,27 @@ network and database connectivity.
 
 ### PhysicalObject(s)
 A PhysicalObject is an object that occupies space and exists at a particular
-geographic location. It can be visible or not, carryable or not.
+geographic location. It can be visible or not, carryable or not. Importantly,
+all `Player`s are `PhysicalObject`s
 
 ### Persister
 A Persister is an instance, of nature undefined, that has extemporaneous value
  saved to the database.
 
 ### Perceivers and Stimuli
+
 ### Room
+Rooms contain PhysicalObjects, Persisters, and Perceivers and persist
+themselves. They are connected by `RoomConnection`s which define 2-way exits.
+
 ### InterObjectAction(s)
+`InterObjectAction`s are necessary when a command or action will affect state
+in a way that could cause affect the inputs to some other command or action. 
+Since things run concurrently in general, there is a special way for players
+to "take" items from a room that forces a sequential ordering. This prevents 
+copies of the object being made if two players try to "take" at roughly the
+same time, for example. Combat actions are not yet implemeented but would be 
+an obvious case for the `InterObjectAction` queue.
 
 ## Extending 
 This section requires more explanation. When public, if
