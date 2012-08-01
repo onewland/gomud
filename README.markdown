@@ -16,7 +16,7 @@ entities from the database.
 
 ## Concepts
 Right now, the implementations of these concepts may not be philosophically
-correct, as elements settle into place, but they should be mostly accurate.
+correct as elements settle into place, but they should be mostly accurate.
 
 ### Universe
 A Universe is a collection of Rooms, PhysicalObjects, Players, and 
