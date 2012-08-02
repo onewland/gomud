@@ -87,7 +87,7 @@ func LoadRoomConn(universe *Universe, id int) *SimpleRoomConnection {
 	vals := universe.Store.LoadStructure(PersistentKeys["roomConnect"],
 		FieldJoin(":","roomConnect",strconv.Itoa(id)))
 	roomAIdStr, _ := vals["roomAId"].(string)
-	roomBIdStr, _ := vals["roomAId"].(string)
+	roomBIdStr, _ := vals["roomBId"].(string)
 	aExitName,_ := vals["aExitName"].(string)
 	bExitName,_ := vals["bExitName"].(string)
 	cc := SimpleRoomConnectCreator(aExitName,bExitName)
