@@ -38,6 +38,16 @@ func init() {
 	colorMap["&cyan;"] = "\x1b[36m"
 	colorMap["&white;"] = "\x1b[37m"
 	colorMap["&;"] = "\x1b[0m"
+
+	GlobalCommands["who"] = Who
+	GlobalCommands["look"] = Look
+	GlobalCommands["say"] = Say
+	GlobalCommands["take"] = Take
+	GlobalCommands["go"] = GoExit
+	GlobalCommands["inv"] = Inv
+	GlobalCommands["quit"] = Quit
+	GlobalCommands["make"] = Make
+	
 }
 
 func (p Player) Room() *Room {
@@ -93,25 +103,8 @@ func (p *Player) ExecCommandLoop() {
 		if nextCommandSplit != nil && len(nextCommandSplit) > 0 {
 			nextCommandRoot := nextCommandSplit[0]
 			nextCommandArgs := nextCommandSplit[1:]
-			fmt.Println("Next command from",p.name,
-				":",nextCommandRoot)
-			fmt.Println("args:",nextCommandArgs)
-			if nextCommandRoot == "who" {
-				p.Who(nextCommandArgs)
-			} else if nextCommandRoot == "look" {
-				p.Look(nextCommandArgs)
-			} else if nextCommandRoot == "say" {
-				p.Say(nextCommandArgs)
-			} else if nextCommandRoot == "take" {
-				p.Take(nextCommandArgs)
-			} else if nextCommandRoot == "go" {
-				p.GoExit(nextCommandArgs)
-			} else if nextCommandRoot == "inv" {
-				p.Inv(nextCommandArgs)
-			} else if nextCommandRoot == "quit" {
-				p.Quit(nextCommandArgs)
-			} else if nextCommandRoot == "make" {
-				p.Make(nextCommandArgs)
+			if c, ok := GlobalCommands[nextCommandRoot]; ok {
+				c(p, nextCommandArgs)
 			}
 		}
 		p.WriteString("> ")
@@ -119,7 +112,7 @@ func (p *Player) ExecCommandLoop() {
 	}
 }
 
-func (p *Player) Look(args []string) {
+func Look(p *Player, args []string) {
 	room := p.room
 	if len(args) > 1 {
 		fmt.Println("Too many args")
@@ -129,7 +122,7 @@ func (p *Player) Look(args []string) {
 	}
 }
 
-func (p *Player) Who(args []string) {
+func Who(p *Player, args []string) {
 	gotOne := false
 	for id, pOther := range p.universe.Players {
 		if id != p.id {
@@ -144,13 +137,13 @@ func (p *Player) Who(args []string) {
 	}
 }
 
-func (p *Player) Say(args []string) {
+func Say(p *Player, args []string) {
 	room := p.room
 	sayStim := TalkerSayStimulus{talker: p, text: strings.Join(args," ")}
 	room.stimuliBroadcast <- sayStim
 }
 
-func (p *Player) Take(args []string) {
+func Take(p *Player, args []string) {
 	room := p.room
 	if len(args) > 0 {
 		target := strings.ToLower(args[0])
@@ -161,7 +154,7 @@ func (p *Player) Take(args []string) {
 	}
 }
 
-func (p *Player) Inv(args []string) {
+func Inv(p *Player, args []string) {
 	p.WriteString(Divider())
 	for _, obj := range p.inventory {
 		if obj != nil {
@@ -171,7 +164,7 @@ func (p *Player) Inv(args []string) {
 	p.WriteString(Divider())
 }
 
-func (p *Player) GoExit(args []string) {
+func GoExit(p *Player, args []string) {
 	room := p.room
 	if(len(args) < 1) {
 		p.WriteString("Go usage: go [exit name]. Ex. go north")
@@ -194,11 +187,11 @@ func (p *Player) GoExit(args []string) {
 	}
 }
 
-func (p *Player) Quit(args[] string) {
+func Quit(p *Player, args[] string) {
 	p.quitting <- true
 }
 
-func (p *Player) Make(args[] string) {
+func Make(p *Player, args[] string) {
 	fmt.Println("[WARNING] Make command should not be in production")
 	p.universe.Maker(p.universe, p, args)
 }
