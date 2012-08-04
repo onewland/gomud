@@ -14,7 +14,7 @@ type Player struct {
 	name string
 	sock net.Conn
 	inventory []PhysicalObject
-	universe *Universe
+	Universe *Universe
 	commandBuf chan string
 	stimuli chan Stimulus
 	quitting chan bool
@@ -47,7 +47,6 @@ func init() {
 	GlobalCommands["inv"] = Inv
 	GlobalCommands["quit"] = Quit
 	GlobalCommands["make"] = Make
-	
 }
 
 func (p Player) Room() *Room {
@@ -124,7 +123,7 @@ func Look(p *Player, args []string) {
 
 func Who(p *Player, args []string) {
 	gotOne := false
-	for id, pOther := range p.universe.Players {
+	for id, pOther := range p.Universe.Players {
 		if id != p.id {
 			str_who := fmt.Sprintf("[WHO] %s\n",pOther.name)
 			p.WriteString(str_who)
@@ -170,21 +169,13 @@ func GoExit(p *Player, args []string) {
 		p.WriteString("Go usage: go [exit name]. Ex. go north")
 		return 
 	}
-	var foundExit *RoomExitInfo
-	fmt.Println(room)
-	fmt.Println(room.exits)
-	for _,exit := range(room.exits) {
-		if args[0] == exit.Name() {
-			foundExit = &exit
-			break
-		}
-	}
-	if foundExit != nil {
+
+	room.WithExit(args[0], func(foundExit *RoomExitInfo) {
 		PlacePlayerInRoom(foundExit.OtherSide(), p)
 		p.WriteString("Should go through exit " + foundExit.Name())
-	} else {
+	}, func() {
 		p.WriteString("No visible exit " + args[0] + ".\n")
-	}
+	})
 }
 
 func Quit(p *Player, args[] string) {
@@ -193,7 +184,7 @@ func Quit(p *Player, args[] string) {
 
 func Make(p *Player, args[] string) {
 	fmt.Println("[WARNING] Make command should not be in production")
-	p.universe.Maker(p.universe, p, args)
+	p.Universe.Maker(p.Universe, p, args)
 }
 
 func (p *Player) ReadLoop(playerRemoveChan chan *Player) {

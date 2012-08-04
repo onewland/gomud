@@ -47,7 +47,7 @@ func (u *Universe) AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Playe
 	p.commandDone = make(chan bool)
 	p.stimuli = make(chan Stimulus, 5)
 	p.inventory = make([]PhysicalObject, 10)
-	p.universe = u
+	p.Universe = u
 	u.Players[p.id] = p
 	fmt.Println(p.name, "joined, ID =",p.id)
 	fmt.Println(len(u.Players), "player[s] online.")

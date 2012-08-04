@@ -299,3 +299,15 @@ func NewBasicRoom(universe *Universe, rid int, rtext string, physObjs []Physical
 
 	return &r
 }
+
+type FoundExit func(rei *RoomExitInfo)
+
+func (r *Room) WithExit(name string, found FoundExit, notFound func()) {
+	for _,exit := range(r.exits) {
+		if name == exit.Name() {
+			found(&exit)
+			return
+		}
+	}
+	notFound()
+}

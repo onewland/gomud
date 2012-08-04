@@ -28,11 +28,11 @@ func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 	ballSlice := []mud.PhysicalObject{theBall, theClock, puritan, ff}
 	empty := []mud.PhysicalObject{}
 
-	room := mud.NewBasicRoom(universe, 1, "You are in a bedroom.", ballSlice)
+	room := mud.NewBasicRoom(universe, 0, "You are in a bedroom.", ballSlice)
 	room.AddPerceiver(puritan)
 	room.AddPerceiver(ff)
 	room.AddPersistent(ff)
-	room2 := mud.NewBasicRoom(universe, 2, "You are in a bathroom.", empty)
+	room2 := mud.NewBasicRoom(universe, 0, "You are in a bathroom.", empty)
 	puritan.room = room
 
 	src := mud.ConnectEastWest(room, room2)
