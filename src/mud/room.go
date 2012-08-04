@@ -311,3 +311,6 @@ func (r *Room) WithExit(name string, found FoundExit, notFound func()) {
 	}
 	notFound()
 }
+
+func (r *Room) SetText(text string) { r.text = text }
+func (r *Room) Text() string { return r.text }

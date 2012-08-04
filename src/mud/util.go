@@ -4,7 +4,7 @@ import "regexp"
 
 func SplitCommandString(cmd string) []string {
 	re, _ := regexp.Compile(`(\S+)|(['"][^'"]+['"])`)
-	return re.FindAllString(cmd, 10)
+	return re.FindAllString(cmd, 100)
 }
 
 func Divider() string { 

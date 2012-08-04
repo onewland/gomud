@@ -1,7 +1,8 @@
 package main
 
 import ("mud"
-	"fmt")
+	"fmt"
+	"strings")
 
 func init() {
 	mud.GlobalCommands["pioneer"] = Pioneer
@@ -23,7 +24,7 @@ func Pioneer(p *mud.Player, args[] string) {
 
 func BuildPioneerRoom(p *mud.Player, direction string) {
 	var roomConn *mud.SimpleRoomConnection
-	newRoom := mud.NewBasicRoom(p.Universe, 
+	newRoom := mud.NewBasicRoom(p.Universe,
 		0,
 		"A default room text.",
 		[]mud.PhysicalObject{})
@@ -44,4 +45,21 @@ func BuildPioneerRoom(p *mud.Player, direction string) {
 }
 
 func Rewrite(p *mud.Player, args[] string) {
+	subCommand := args[0]
+	line := strings.Join(args[1:], " ")
+	r := p.Room()
+	switch subCommand {
+	case "all":
+		r.SetText(line)
+	case "append":
+		roomText := r.Text()
+		roomText = strings.Join([]string{roomText, line}, "\r\n")
+		r.SetText(roomText)
+	case "prepend":
+		roomText := r.Text()
+		roomText = strings.Join([]string{line, roomText}, "\r\n")
+		r.SetText(roomText)
+	default:
+		p.WriteString("Rewrite subcommand not recognized.\n")
+	}
 }

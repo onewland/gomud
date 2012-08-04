@@ -72,4 +72,6 @@ is persisted in the field flipFlop:[id]:bling
 
 ### HeartbeatClock
 `HeartbeatClock` is an example class showing how to create an object
-that is dependent on the Heartbeat function.
+that is dependent on the Heartbeat function. `HeartbeatClock` does 
+not implement persistence functions, so it will load when seeded but
+not remain after a server restart.
