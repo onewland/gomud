@@ -5,6 +5,9 @@ import ("net"
 	"fmt"
 	"io")
 
+type PerceiveTest func(p Player, s Stimulus) bool
+var PlayerPerceptions map[string]PerceiveTest
+
 type Player struct {
 	Talker
 	Perceiver
@@ -47,6 +50,12 @@ func init() {
 	GlobalCommands["inv"] = Inv
 	GlobalCommands["quit"] = Quit
 	GlobalCommands["make"] = Make
+	
+	PlayerPerceptions = make(map[string]PerceiveTest)
+	PlayerPerceptions["enter"] = DoesPerceiveEnter
+	PlayerPerceptions["exit"] = DoesPerceiveExit
+	PlayerPerceptions["say"] = DoesPerceiveSay
+	PlayerPerceptions["take"] = DoesPerceiveTake
 }
 
 func (p Player) Room() *Room {
@@ -224,24 +233,33 @@ func (p *Player) WriteString(str string) {
 }
 
 func (p Player) DoesPerceive(s Stimulus) bool {
-	switch s.(type) {
-	case PlayerEnterStimulus: 
-		return p.DoesPerceiveEnter(s.(PlayerEnterStimulus))
-	case PlayerLeaveStimulus: 
-		return p.DoesPerceiveExit(s.(PlayerLeaveStimulus))
-	case TalkerSayStimulus: return true
-	case PlayerPickupStimulus: return true
-	}
-	return false
+	perceptTest := PlayerPerceptions[s.StimType()]
+	return perceptTest(p, s)
+	// switch s.(type) {
+	// case PlayerEnterStimulus: 
+	// 	return p.DoesPerceiveEnter(s.(PlayerEnterStimulus))
+	// case PlayerLeaveStimulus: 
+	// 	return p.DoesPerceiveExit(s.(PlayerLeaveStimulus))
+	// case TalkerSayStimulus: return true
+	// case PlayerPickupStimulus: return true
+	// }
+	// return true
 }
 
-func (p Player) DoesPerceiveEnter(s PlayerEnterStimulus) bool {
-	return !(s.player.id == p.id)
+func DoesPerceiveEnter(p Player, s Stimulus) bool {
+	sEnter, ok := s.(PlayerEnterStimulus)
+	if !ok { panic("Bad input to DoesPerceiveEnter") }
+	return !(sEnter.player.id == p.id)
 }
 
-func (p Player) DoesPerceiveExit(s PlayerLeaveStimulus) bool {
-	return !(s.player.id == p.id)
+func DoesPerceiveExit(p Player, s Stimulus) bool {
+	sExit, ok := s.(PlayerLeaveStimulus)
+	if !ok { panic("Bad input to DoesPerceiveExit") }
+	return !(sExit.player.id == p.id)
 }
+
+func DoesPerceiveSay(p Player, s Stimulus) bool { return true }
+func DoesPerceiveTake(p Player, s Stimulus) bool { return true }
 
 func (p Player) PerceiveList() PerceiveMap {
 	// Right now, perceive people in the room, objects in the room,

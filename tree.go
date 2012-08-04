@@ -7,6 +7,7 @@ import ("fmt"
 func init() {
 	mud.Loaders["fruitTree"] = LoadFruitTree
 	mud.PersistentKeys["fruitTree"] = []string { "id" }
+	mud.PlayerPerceptions["flower"] = DoesPerceiveFlower
 }
 
 type FruitTree struct {
@@ -14,11 +15,24 @@ type FruitTree struct {
 	mud.Persister
 	mud.TimeListener
 	universe *mud.Universe
+	room *mud.Room
 	fruitName string
 	fruitDropFreq int
 	nextFlowering int
 	ping chan int
 }
+
+type TreeFlowerStimulus struct {
+	mud.Stimulus
+	ft *FruitTree
+}
+
+func (s TreeFlowerStimulus) StimType() string { return "flower" }
+func (s TreeFlowerStimulus) Description(p mud.Perceiver) string {
+	return "The " + s.ft.fruitName + " tree has blossomed.\n"
+}
+
+func DoesPerceiveFlower(p mud.Player, s mud.Stimulus) bool { return true }
 
 func (f FruitTree) Visible() bool { return true }
 func (f FruitTree) Carryable() bool { return false }
@@ -30,7 +44,7 @@ func (f FruitTree) Description() string {
 }
 func (f *FruitTree) Ping() chan int { return f.ping }
 func (f *FruitTree) Bloom() {
-	fmt.Println("Flowering")
+	f.room.Broadcast(TreeFlowerStimulus{ft: f})
 }
 
 func (f *FruitTree) UpdateTimeLoop() {

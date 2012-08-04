@@ -23,6 +23,7 @@ func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 
 	tree := MakeFruitTree(universe, "orange")
 	room2.AddPhysObj(tree)
+	tree.room = room2
 
 	src := mud.ConnectEastWest(room, room2)
 	universe.AddPersistent(src)
