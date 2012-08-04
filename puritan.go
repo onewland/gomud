@@ -52,3 +52,11 @@ func (p Puritan) StimuliChannel() chan mud.Stimulus {
 func (p Puritan) Visible() bool { return true }
 func (p Puritan) Description() string { return p.Name() }
 func (p Puritan) Carryable() bool { return false }
+
+func MakePuritan() *Puritan {
+	puritan := new(Puritan)
+	puritan.id = 100
+	puritan.stimuli = make(chan mud.Stimulus, 5)
+	go mud.StimuliLoop(puritan)
+	return puritan
+}

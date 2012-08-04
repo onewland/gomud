@@ -4,20 +4,6 @@ import ("mud"
 	"strconv"
 	"fmt")
 
-func MakePuritan() *Puritan {
-	puritan := new(Puritan)
-	puritan.id = 100
-	puritan.stimuli = make(chan mud.Stimulus, 5)
-	go mud.StimuliLoop(puritan)
-	return puritan
-}
-
-func MakeClock() *HeartbeatClock {
-	clock := new(HeartbeatClock)
-	clock.tPing = make(chan int)
-	return clock
-}
-
 func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 	puritan := MakePuritan()
 	theBall := Ball{}
@@ -35,13 +21,11 @@ func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 	room2 := mud.NewBasicRoom(universe, 0, "You are in a bathroom.", empty)
 	puritan.room = room
 
+	tree := MakeFruitTree(universe, "orange")
+	room2.AddPhysObj(tree)
+
 	src := mud.ConnectEastWest(room, room2)
 	universe.AddPersistent(src)
-	go room.FanOutBroadcasts()
-	go room2.FanOutBroadcasts()
-	go room.ActionQueue()
-	go room2.ActionQueue()
-	go theClock.UpdateTimeLoop()
 
 	return room
 }
@@ -51,6 +35,8 @@ func LoadStupidRooms(universe *mud.Universe) *mud.Room {
 	roomConnIds := universe.Store.GlobalSetGet("roomConnects")
 	for _, roomId := range(roomIds) {
 		if idNo, err := strconv.Atoi(roomId); err == nil {
+			// Note that load room also loads any children
+			// persisters
 			mud.LoadRoom(universe, idNo)
 		} else {
 			fmt.Println("[warn] strange roomId",roomId)

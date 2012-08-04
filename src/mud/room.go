@@ -279,7 +279,6 @@ func LoadRoom(universe *Universe, id int) *Room {
 				if(perceives) { r.AddPerceiver(pAsPerceiver) }
 			}
 		}
-		go r.FanOutBroadcasts()
 		return r
 	}
 	return nil
@@ -297,6 +296,8 @@ func NewBasicRoom(universe *Universe, rid int, rtext string, physObjs []Physical
 	universe.Rooms[r.id] = &r
 	universe.Persistents = append(universe.Persistents, &r)
 
+	go r.FanOutBroadcasts()
+	go r.ActionQueue()
 	return &r
 }
 

@@ -22,3 +22,10 @@ func (c *HeartbeatClock) Ping() chan int { return c.tPing }
 func (c *HeartbeatClock) UpdateTimeLoop() {
 	for { c.counter = <- c.tPing }
 }
+
+func MakeClock() *HeartbeatClock {
+	clock := new(HeartbeatClock)
+	clock.tPing = make(chan int)
+	go clock.UpdateTimeLoop()
+	return clock
+}
