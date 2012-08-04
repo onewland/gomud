@@ -37,8 +37,8 @@ func (f *FruitTree) UpdateTimeLoop() {
 	for { 
 		now := <- f.ping
 		if(now == f.nextFlowering) {
-			f.nextFlowering = now + 30000 + (rand.Int()%250)- 
-				(rand.Int()%250);
+			f.nextFlowering = now + 30000 + (rand.Int()%1250)- 
+				(rand.Int()%1250);
 			f.Bloom()
 		}
 	}
