@@ -235,15 +235,6 @@ func (p *Player) WriteString(str string) {
 func (p Player) DoesPerceive(s Stimulus) bool {
 	perceptTest := PlayerPerceptions[s.StimType()]
 	return perceptTest(p, s)
-	// switch s.(type) {
-	// case PlayerEnterStimulus: 
-	// 	return p.DoesPerceiveEnter(s.(PlayerEnterStimulus))
-	// case PlayerLeaveStimulus: 
-	// 	return p.DoesPerceiveExit(s.(PlayerLeaveStimulus))
-	// case TalkerSayStimulus: return true
-	// case PlayerPickupStimulus: return true
-	// }
-	// return true
 }
 
 func DoesPerceiveEnter(p Player, s Stimulus) bool {
