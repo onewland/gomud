@@ -2,7 +2,8 @@ package main
 
 import ("fmt"
 	"mud"
-	"math/rand")
+	"math/rand"
+	"strconv")
 
 func init() {
 	mud.Loaders["fruitTree"] = LoadFruitTree
@@ -17,8 +18,8 @@ type FruitTree struct {
 	universe *mud.Universe
 	room *mud.Room
 	fruitName string
-	fruitDropFreq int
 	nextFlowering int
+	id int
 	ping chan int
 }
 
@@ -58,13 +59,35 @@ func (f *FruitTree) UpdateTimeLoop() {
 	}
 }
 
+func (f *FruitTree) PersistentValues() map[string]interface{} {
+	vals := make(map[string]interface{})
+	if(f.id > 0) {
+		vals["id"] = strconv.Itoa(f.id)
+	}
+	vals["fruitName"] = f.fruitName
+	vals["nextFlowering"] = strconv.Itoa(f.nextFlowering)
+	return vals
+}
+
+func (f *FruitTree) Save() string {
+	outID := f.universe.Store.SaveStructure("fruitTree",f.PersistentValues())
+	if(f.id == 0) {
+		f.id, _ = strconv.Atoi(outID)
+	}
+	return outID
+}
+
+func (f *FruitTree) DBFullName() string {
+	return fmt.Sprintf("fruitTree:%d",f.id)
+}
+
 func MakeFruitTree(u *mud.Universe, fruitName string) *FruitTree {
 	ft := new(FruitTree)
 	ft.universe = u
 	ft.fruitName = fruitName
 	ft.ping = make(chan int)
 
-//	u.Persistents = append(u.Persistents, ft)
+	u.Persistents = append(u.Persistents, ft)
 	u.TimeListeners = append(u.TimeListeners, ft)
 
 	go ft.UpdateTimeLoop()
@@ -73,7 +96,12 @@ func MakeFruitTree(u *mud.Universe, fruitName string) *FruitTree {
 }
 
 func LoadFruitTree(u *mud.Universe, id int) interface{} {
-//	var ok bool
 	ft := MakeFruitTree(u, "orange")
+	vals := u.Store.LoadStructure(mud.PersistentKeys["fruitTree"],
+		mud.FieldJoin(":","fruitTree",strconv.Itoa(id)))
+	ft.id = id
+	ft.fruitName, _ = vals["fruitName"].(string)
+	nextFloweringS, _ := vals["fruitName"].(string)
+	ft.nextFlowering, _ = strconv.Atoi(nextFloweringS)
 	return ft
 }
