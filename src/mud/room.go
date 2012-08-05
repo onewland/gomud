@@ -1,7 +1,6 @@
 package mud
 
-import ("fmt"
-	"strconv")
+import ("strconv")
 
 func init() {
 	PersistentKeys["room"] = []string{ "id", "text", "persisters" }
@@ -83,7 +82,7 @@ func (rc *SimpleRoomConnection) Save() string {
 }
 
 func LoadRoomConn(universe *Universe, id int) *SimpleRoomConnection {
-	fmt.Println("Entering LoadRoomConn")
+	//Log("Entering LoadRoomConn")
 	vals := universe.Store.LoadStructure(PersistentKeys["roomConnect"],
 		FieldJoin(":","roomConnect",strconv.Itoa(id)))
 	roomAIdStr, _ := vals["roomAId"].(string)
@@ -140,7 +139,7 @@ func (r *Room) FanOutBroadcasts() {
 	for {
 		broadcast := <- r.stimuliBroadcast
 		for _,p := range r.perceivers { 
-			fmt.Println("fanning broadcast to ",p)
+			//Log("fanning broadcast to ",p)
 			p.StimuliChannel() <- broadcast 
 		}
 	}
@@ -196,12 +195,10 @@ func (r *Room) DescribePlayers(toPlayer *Player) string {
 
 func (r *Room) AddPhysObj(p PhysicalObject) {
 	r.physObjects = append(r.physObjects, p)
-	fmt.Println("[add] new physObjects = ",r.physObjects)
 }
 
 func (r *Room) AddPerceiver(p Perceiver) {
 	r.perceivers = append(r.perceivers, p)
-	fmt.Println("[add] new perceivers = ",r.perceivers)
 }
 
 func (r *Room) RemovePerceiver(p Perceiver) {
@@ -213,7 +210,7 @@ func (r *Room) RemovePerceiver(p Perceiver) {
 			} else {
 				r.perceivers = []Perceiver{}
 			}
-			fmt.Println("[rm] new perceivers = ",r.perceivers)
+			Log("[rm] new perceivers = ",r.perceivers)
 			break
 		}
 	}
@@ -232,7 +229,7 @@ func (r *Room) RemovePersistent(p Persister) {
 			} else {
 				r.Persistents = []Persister{}
 			}
-			fmt.Println("[rm] new Persistents = ",r.Persistents)
+			Log("[rm] new Persistents = ",r.Persistents)
 			break
 		}
 	}
@@ -264,7 +261,7 @@ func (r *Room) Save() string {
 func LoadRoom(universe *Universe, id int) *Room {
 	vals := universe.Store.LoadStructure(PersistentKeys["room"],
 		FieldJoin(":","room",strconv.Itoa(id)))
-	fmt.Println("LoadRoom vals",vals)
+	Log("LoadRoom vals",vals)
 	if textStr, ok := vals["text"].(string); ok {
 		r := NewBasicRoom(universe, id, textStr, []PhysicalObject{})
 		if persisterIds, ok := vals["persisters"].([]string); ok {

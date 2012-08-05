@@ -1,8 +1,7 @@
 package main
 
 import ("mud"
-	"strconv"
-	"fmt")
+	"strconv")
 
 func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 	puritan := MakePuritan()
@@ -40,7 +39,7 @@ func LoadStupidRooms(universe *mud.Universe) *mud.Room {
 			// persisters
 			mud.LoadRoom(universe, idNo)
 		} else {
-			fmt.Println("[warn] strange roomId",roomId)
+			mud.Log("[warn] strange roomId",roomId)
 		}
 	}
 
@@ -48,7 +47,7 @@ func LoadStupidRooms(universe *mud.Universe) *mud.Room {
 		if idNo, err := strconv.Atoi(roomIdConn); err == nil {
 			mud.LoadRoomConn(universe, idNo)
 		} else {
-			fmt.Println("[warn] strange roomConnId",roomIdConn)
+			mud.Log("[warn] strange roomConnId",roomIdConn)
 		}
 	}
 	return universe.Rooms[1]

@@ -123,7 +123,7 @@ func (p *Player) ExecCommandLoop() {
 func Look(p *Player, args []string) {
 	room := p.room
 	if len(args) > 1 {
-		fmt.Println("Too many args")
+		Log("Too many args")
 		p.WriteString("Too many args")
 	} else {
 		p.WriteString(room.Describe(p) + "\n")
@@ -192,7 +192,7 @@ func Quit(p *Player, args[] string) {
 }
 
 func Make(p *Player, args[] string) {
-	fmt.Println("[WARNING] Make command should not be in production")
+	Log("[WARNING] Make command should not be in production")
 	p.Universe.Maker(p.Universe, p, args)
 }
 
@@ -211,7 +211,7 @@ func (p *Player) ReadLoop(playerRemoveChan chan *Player) {
 				strCommand := string(rawBuf[:n])
 				p.commandBuf <- strings.TrimRight(strCommand,"\n\r")
 			} else if err == io.EOF {
-				fmt.Println(p.name, "Disconnected")
+				Log(p.name, "Disconnected")
 				playerRemoveChan <- p
 				return
 			}
@@ -221,7 +221,7 @@ func (p *Player) ReadLoop(playerRemoveChan chan *Player) {
 
 func (p *Player) HandleStimulus(s Stimulus) {
 	p.WriteString(s.Description(p))
-	fmt.Println(p.name,"receiving stimulus",s.StimType())
+	Log(p.name,"receiving stimulus",s.StimType())
 }
 
 func (p *Player) WriteString(str string) {
@@ -265,7 +265,7 @@ func (p Player) PerceiveList() PerceiveMap {
 	targetList = append(targetList, invObjects...)
 
 	for _,target := range(targetList) {
-		fmt.Println(target)
+		Log(target)
 		if target != nil && target.Visible() {
 			for _,handle := range(target.TextHandles()) {
 				physObjects[handle] = target

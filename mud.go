@@ -1,6 +1,6 @@
 package main
 
-import ("fmt"
+import ("os"
 	"net"
 	"math/rand"
 	"time"
@@ -17,7 +17,7 @@ func main() {
 		flag.PrintDefaults()
 	}
 	flag.Parse()
-	fmt.Println(flag.Args())
+	mud.Log("program args: ", os.Args)
 
 	rand.Seed(time.Now().Unix())
 	listener, err := net.Listen("tcp", ":3000")
@@ -28,16 +28,16 @@ func main() {
 
 	var theRoom *mud.Room
 	if(*flagUseSeed) {
-		fmt.Println("Seeding Universe")
+		mud.Log("Seeding Universe")
 		universe.ClearDB()
 		theRoom = MakeStupidRooms(universe)
 	} else if(*flagUseLoad) {
-		fmt.Println("Loading Universe")
+		mud.Log("Loading Universe")
 		theRoom = LoadStupidRooms(universe)
-		fmt.Println("theRoom",theRoom)
+		mud.Log("theRoom",theRoom)
 	}
 
-	fmt.Println("len(rooms) =",len(universe.Rooms))
+	mud.Log("len(rooms) =",len(universe.Rooms))
 
 	go universe.HandlePersist()
 	go HeartbeatLoop(universe.TimeListeners)
@@ -46,7 +46,7 @@ func main() {
 		go mud.PlayerListManager(playerRemoveChan, universe.Players)
 		defer listener.Close()
 
-		fmt.Println("Listening on port 3000")
+		mud.Log("Listening on port 3000")
 		for {
 			conn, aerr := listener.Accept()
 			if aerr == nil {
@@ -58,11 +58,13 @@ func main() {
 				go newP.ExecCommandLoop()
 				go mud.StimuliLoop(newP)
 			} else {
-				fmt.Println("Error in accept")
+				mud.Log("Error in accept")
+				mud.Log(aerr)
 			}
 		}
 	} else {
-		fmt.Println("Error in listen")
+		mud.Log("Error in listen")
+		mud.Log(err)
 	}
 }
 

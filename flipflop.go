@@ -24,7 +24,7 @@ func (f FlipFlop) ID() int { return f.id }
 func (f FlipFlop) Name() string { return f.lastText }
 // Only respond to Talk stimulus to copy them
 func (f FlipFlop) DoesPerceive(s mud.Stimulus) bool {
-	fmt.Println("DoesPerceive entered");
+	mud.Log("DoesPerceive entered");
 	_, isSay := s.(mud.TalkerSayStimulus)
 	return isSay
 }
@@ -35,7 +35,7 @@ func (f *FlipFlop) HandleStimulus(s mud.Stimulus) {
 		panic("FF should only receive TalkerSayStimulus")
 	} else {
 		args := strings.SplitN(scast.Text()," ",3)
-		fmt.Println("FF args:",args)
+		mud.Log("FF args:",args)
 		if(args[0] == "bling") {
 			switch(args[1]) {
 			case "set":

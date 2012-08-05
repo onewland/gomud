@@ -1,7 +1,6 @@
 package mud
 
-import ("net" 
-	"fmt" 
+import ("net"
 	"math/rand"
         "redis")
 
@@ -49,8 +48,8 @@ func (u *Universe) AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Playe
 	p.inventory = make([]PhysicalObject, 10)
 	p.Universe = u
 	u.Players[p.id] = p
-	fmt.Println(p.name, "joined, ID =",p.id)
-	fmt.Println(len(u.Players), "player[s] online.")
+	Log(p.name, "joined, ID =",p.id)
+	Log(len(u.Players), "player[s] online.")
 	return p
 }
 
@@ -68,6 +67,6 @@ func PlayerListManager(toRemove chan *Player, pList map[int]*Player) {
 		pRoom := pRemove.room
 		RemovePlayerFromRoom(pRoom, pRemove)
 		delete(pList, pRemove.id)
-		fmt.Println("Removed", pRemove.name, "from player list")
+		Log("Removed", pRemove.name, "from player list")
 	}
 }

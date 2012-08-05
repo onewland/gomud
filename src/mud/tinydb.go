@@ -54,7 +54,7 @@ func (t *TinyDB) LoadStructure(keys []string, fullDbUrl string) Pvals {
 			mems, _ := t.dbConn.Smembers(keyFull)
 			vals[key] = SMembersAsString(mems)
 		case redis.RT_NONE:
-			fmt.Println("[WARN] persistent key expected but not found:",keyFull)
+			Log("[WARN] persistent key expected but not found:",keyFull)
 		default:
 			panic("Unrecognized value type in Redis middleware")
 		}

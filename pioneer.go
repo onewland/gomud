@@ -1,7 +1,6 @@
 package main
 
 import ("mud"
-	"fmt"
 	"strings")
 
 func init() {
@@ -12,7 +11,7 @@ func init() {
 func Pioneer(p *mud.Player, args[] string) {
 	direction := args[0]
 
-	fmt.Println("Pioneer",args)
+	mud.Log("Pioneer",args)
 	
 	p.Room().WithExit(direction, func(rei *mud.RoomExitInfo) {
 		p.WriteString("That exit already exists.\n")
