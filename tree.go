@@ -7,7 +7,7 @@ import ("fmt"
 
 func init() {
 	mud.Loaders["fruitTree"] = LoadFruitTree
-	mud.PersistentKeys["fruitTree"] = []string { "id" }
+	mud.PersistentKeys["fruitTree"] = []string { "id", "fruitName", "nextFlowering" }
 	mud.PlayerPerceptions["flower"] = DoesPerceiveFlower
 }
 
@@ -108,7 +108,7 @@ func LoadFruitTree(u *mud.Universe, id int) interface{} {
 		mud.FieldJoin(":","fruitTree",strconv.Itoa(id)))
 	ft.id = id
 	ft.fruitName, _ = vals["fruitName"].(string)
-	nextFloweringS, _ := vals["fruitName"].(string)
+	nextFloweringS, _ := vals["nextFlowering"].(string)
 	ft.nextFlowering, _ = strconv.Atoi(nextFloweringS)
 	return ft
 }
