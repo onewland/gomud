@@ -43,8 +43,15 @@ func (f FruitTree) TextHandles() []string {
 func (f FruitTree) Description() string {
 	return "A " + f.fruitName + " tree";
 }
+func (f *FruitTree) SetRoom(r *mud.Room) {
+	mud.Log("SetRoom",r)
+	f.room = r 
+}
+func (f *FruitTree) Room() *mud.Room { return f.room }
+
 func (f *FruitTree) Ping() chan int { return f.ping }
 func (f *FruitTree) Bloom() {
+	mud.Log("Bloom in room",f.room)
 	f.room.Broadcast(TreeFlowerStimulus{ft: f})
 }
 

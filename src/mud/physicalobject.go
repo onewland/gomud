@@ -5,4 +5,6 @@ type PhysicalObject interface {
 	Description() string
 	Carryable() bool
 	TextHandles() []string
+	SetRoom(*Room)
+	Room() *Room
 }

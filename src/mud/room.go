@@ -195,6 +195,7 @@ func (r *Room) DescribePlayers(toPlayer *Player) string {
 
 func (r *Room) AddPhysObj(p PhysicalObject) {
 	r.physObjects = append(r.physObjects, p)
+	p.SetRoom(r)
 }
 
 func (r *Room) AddPerceiver(p Perceiver) {

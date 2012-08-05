@@ -113,6 +113,8 @@ func (p *Player) ExecCommandLoop() {
 			nextCommandArgs := nextCommandSplit[1:]
 			if c, ok := GlobalCommands[nextCommandRoot]; ok {
 				c(p, nextCommandArgs)
+			} else {
+				p.WriteString("Command '" + nextCommandRoot + "' not recognized.\n")
 			}
 		}
 		p.WriteString("> ")

@@ -58,6 +58,8 @@ func (f FlipFlop) PersistentValues() map[string]interface{} {
 	vals["bling"] = f.lastText
 	return vals
 }
+func (f FlipFlop) SetRoom(r *mud.Room) { f.room = r }
+func (f FlipFlop) Room() *mud.Room { return f.room }
 
 func (f *FlipFlop) Save() string {
 	outID := f.universe.Store.SaveStructure("flipFlop",f.PersistentValues())	
