@@ -52,11 +52,13 @@ func (f *FruitTree) Room() *mud.Room { return f.room }
 func (f *FruitTree) Ping() chan int { return f.ping }
 func (f *FruitTree) Bloom() {
 	mud.Log("Bloom in room",f.room)
+	newFruit := MakeFruit(f.universe, f.fruitName)
 	f.room.Broadcast(TreeFlowerStimulus{ft: f})
+	f.room.AddPhysObj(newFruit)
 }
 
 func (f *FruitTree) UpdateTimeLoop() {
-	for { 
+	for {
 		now := <- f.ping
 		if(now == f.nextFlowering) {
 			f.nextFlowering = now + 30000 + (rand.Int()%1250)- 
