@@ -87,9 +87,7 @@ func BuildFFInRoom(u *mud.Universe, p *mud.Player, args []string) {
 	ff := MakeFlipFlop(u)
 	ff.lastText = strings.Join(args, " ")
 	room := p.Room()
-	room.AddPerceiver(ff)
-	room.AddPhysObj(ff)
-	room.AddPersistent(ff)
+	room.AddChild(ff)
 }
 
 func LoadFlipFlop(u *mud.Universe, id int) interface{} {

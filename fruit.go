@@ -4,7 +4,7 @@ import ("mud"
 	"fmt")
 
 type Fruit struct {
-	mud.Persister
+//	mud.Persister
 	mud.PhysicalObject
 	mud.TimeListener
 	universe *mud.Universe
