@@ -50,10 +50,7 @@ func (f Fruit) Description() string {
 	return fmt.Sprintf("A(n) %s %s", f.stage.name, f.name);
 }
 
-func (f *Fruit) SetRoom(r *mud.Room) {
-	mud.Log("SetRoom",r)
-	f.room = r 
-}
+func (f *Fruit) SetRoom(r *mud.Room) { f.room = r }
 func (f *Fruit) Room() *mud.Room { return f.room }
 
 type FruitTasteStimulus struct {
