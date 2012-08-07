@@ -22,6 +22,9 @@ func (p Puritan) TextHandles() []string {
 	return []string { "mary", "mm" }
 }
 
+func (p *Puritan) SetRoom(r *mud.Room) { p.room = r }
+func (p *Puritan) Room() *mud.Room { return p.room }
+
 func ContainsAny(s string, subs ...string) bool {
 	for _,sub := range(subs) {
 		if(strings.Contains(s, sub)) {

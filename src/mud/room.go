@@ -193,6 +193,16 @@ func (r *Room) DescribePlayers(toPlayer *Player) string {
 	return objTextBuf
 }
 
+func (r *Room) AddChild(o interface{}) {
+	oAsPhysObj, isPhysical := o.(PhysicalObject)
+	oAsPersist, persists := o.(Persister)
+	oAsPerceiver, perceives := o.(Perceiver)
+	
+	if(isPhysical) { r.AddPhysObj(oAsPhysObj) }
+	if(persists) { r.AddPersistent(oAsPersist) }
+	if(perceives) { r.AddPerceiver(oAsPerceiver) }
+}
+
 func (r *Room) AddPhysObj(p PhysicalObject) {
 	r.physObjects = append(r.physObjects, p)
 	p.SetRoom(r)
@@ -268,13 +278,7 @@ func LoadRoom(universe *Universe, id int) *Room {
 		if persisterIds, ok := vals["persisters"].([]string); ok {
 			for _,pid := range(persisterIds) {
 				p := LoadArbitrary(universe, pid)
-				pAsPhysObj, isPhysical := p.(PhysicalObject)
-				pAsPersist, persists := p.(Persister)
-				pAsPerceiver, perceives := p.(Perceiver)
-
-				if(isPhysical) { r.AddPhysObj(pAsPhysObj) }
-				if(persists) { r.AddPersistent(pAsPersist) }
-				if(perceives) { r.AddPerceiver(pAsPerceiver) }
+				r.AddChild(p)
 			}
 		}
 		return r
