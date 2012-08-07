@@ -60,7 +60,7 @@ func (f *FruitTree) Bloom() {
 func (f *FruitTree) UpdateTimeLoop() {
 	for {
 		now := <- f.ping
-		if(now == f.nextFlowering) {
+		if now == f.nextFlowering {
 			f.nextFlowering = now + 30000 + (rand.Int()%1250)- 
 				(rand.Int()%1250);
 			f.Bloom()
@@ -105,7 +105,7 @@ func MakeFruitTree(u *mud.Universe, fruitName string) *FruitTree {
 }
 
 func LoadFruitTree(u *mud.Universe, id int) interface{} {
-	ft := MakeFruitTree(u, "orange")
+	ft := MakeFruitTree(u, "peach")
 	vals := u.Store.LoadStructure(mud.PersistentKeys["fruitTree"],
 		mud.FieldJoin(":","fruitTree",strconv.Itoa(id)))
 	ft.id = id

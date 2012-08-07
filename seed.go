@@ -20,7 +20,7 @@ func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 	room2 := mud.NewBasicRoom(universe, 0, "You are in a bathroom.", empty)
 	puritan.room = room
 
-	tree := MakeFruitTree(universe, "orange")
+	tree := MakeFruitTree(universe, "peach")
 	room2.AddPhysObj(tree)
 	room2.AddPersistent(tree)
 	tree.room = room2
