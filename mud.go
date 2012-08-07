@@ -40,7 +40,7 @@ func main() {
 	mud.Log("len(rooms) =",len(universe.Rooms))
 
 	go universe.HandlePersist()
-	go HeartbeatLoop(universe.TimeListeners)
+	go universe.HeartbeatLoop()
 
 	if err == nil {
 		go mud.PlayerListManager(playerRemoveChan, universe.Players)
@@ -73,13 +73,4 @@ func UniqueIDGen() func() int {
 	go func() { for ; ; x += 1 { xchan <- x } }()
 
 	return func() int { return <- xchan }
-}
-
-func HeartbeatLoop(listeners []mud.TimeListener) {
-	for n:=0 ; ; n++ {
-		for _, l := range(listeners) {
-			l.Ping() <- n
-		}
-		time.Sleep(1*time.Millisecond)
-	}
 }

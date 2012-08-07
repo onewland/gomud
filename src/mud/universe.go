@@ -2,6 +2,7 @@ package mud
 
 import ("net"
 	"math/rand"
+	"time"
         "redis")
 
 type MakeHandler func (*Universe, *Player, []string)
@@ -59,6 +60,16 @@ func (u *Universe) ClearDB() {
 
 func (u *Universe) AddPersistent(p Persister) {
 	u.Persistents = append(u.Persistents, p)
+}
+
+
+func (u *Universe) HeartbeatLoop() {
+	for n:=0 ; ; n++ {
+		for _, l := range(u.TimeListeners) {
+			l.Ping() <- n
+		}
+		time.Sleep(1*time.Millisecond)
+	}
 }
 
 func PlayerListManager(toRemove chan *Player, pList map[int]*Player) {
