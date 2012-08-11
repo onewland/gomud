@@ -46,6 +46,7 @@ func init() {
 	GlobalCommands["look"] = Look
 	GlobalCommands["say"] = Say
 	GlobalCommands["take"] = Take
+	GlobalCommands["drop"] = Drop
 	GlobalCommands["go"] = GoExit
 	GlobalCommands["inv"] = Inv
 	GlobalCommands["quit"] = Quit
@@ -56,6 +57,7 @@ func init() {
 	PlayerPerceptions["exit"] = DoesPerceiveExit
 	PlayerPerceptions["say"] = DoesPerceiveSay
 	PlayerPerceptions["take"] = DoesPerceiveTake
+	PlayerPerceptions["drop"] = DoesPerceiveDrop
 }
 
 func (p Player) Room() *Room {
@@ -91,6 +93,7 @@ func (p Player) TextHandles() []string {
 func (p *Player) TakeObject(o *PhysicalObject, r *Room) bool {
 	for idx, slot := range(p.inventory) {
 		if(slot == nil) {
+			(*o).SetRoom(nil)
 			p.inventory[idx] = *o
 			for idx, obj := range(r.physObjects) {
 				if(*o == obj) {
@@ -98,6 +101,18 @@ func (p *Player) TakeObject(o *PhysicalObject, r *Room) bool {
 					break
 				}
 			}
+			return true
+		}
+	}
+	return false
+}
+
+func (p *Player) DropObject(o *PhysicalObject, r *Room) bool {
+	Log("Dropping", o, "to", r)
+	for idx, slot := range(p.inventory) {
+		if(slot == *o) {
+			r.AddChild(*o)
+			p.inventory[idx] = nil
 			return true
 		}
 	}
@@ -164,11 +179,24 @@ func Take(p *Player, args []string) {
 	}
 }
 
+func Drop(p *Player, args []string) {
+	room := p.room
+	if len(args) > 0 {
+		target := strings.ToLower(args[0])
+		room.interactionQueue <-
+			PlayerDropAction{ player: p, userTargetIdent: target }
+	} else {
+		p.WriteString("Drop objects by typing 'drop [object name]'.\n")
+	}
+}
+
 func Inv(p *Player, args []string) {
 	p.WriteString(Divider())
+	p.WriteString("Inventory: \n")
 	for _, obj := range p.inventory {
 		if obj != nil {
 			p.WriteString(obj.Description())
+			p.WriteString("\n")
 		}
 	}
 	p.WriteString(Divider())
@@ -253,8 +281,9 @@ func DoesPerceiveExit(p Player, s Stimulus) bool {
 
 func DoesPerceiveSay(p Player, s Stimulus) bool { return true }
 func DoesPerceiveTake(p Player, s Stimulus) bool { return true }
+func DoesPerceiveDrop(p Player, s Stimulus) bool { return true }
 
-func (p Player) PerceiveList() PerceiveMap {
+func (p Player) PerceiveList(context PerceiveContext) PerceiveMap {
 	// Right now, perceive people in the room, objects in the room,
 	// and objects in the player's inventory
 	var targetList []PhysicalObject
@@ -263,8 +292,18 @@ func (p Player) PerceiveList() PerceiveMap {
 	people := room.players
 	roomObjects := room.physObjects
 	invObjects := p.inventory
-	targetList = append(PlayersAsPhysObjSlice(people), roomObjects...)
-	targetList = append(targetList, invObjects...)
+
+	targetList = []PhysicalObject{}
+
+	if(context == LookContext) {
+		targetList = append(targetList, PlayersAsPhysObjSlice(people)...)
+	}
+	if(context == TakeContext || context == LookContext) {
+		targetList = append(targetList, roomObjects...)
+	}
+	if(context == InvContext || context == LookContext) {
+		targetList = append(targetList, invObjects...)
+	}
 
 	for _,target := range(targetList) {
 		Log(target)

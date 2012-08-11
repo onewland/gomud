@@ -29,6 +29,12 @@ type PlayerPickupStimulus struct {
 	obj PhysicalObject
 }
 
+type PlayerDropStimulus struct {	
+	Stimulus
+	player *Player
+	obj PhysicalObject
+}
+
 func (s PlayerEnterStimulus) StimType() string { return "enter" }
 func (s PlayerEnterStimulus) Description(p Perceiver) string {
 	return s.player.name + " has entered the room.\n"
@@ -56,5 +62,14 @@ func (s PlayerPickupStimulus) Description(p Perceiver) string {
 	if ok && s.player.ID() == playerReceiver.id {
 		return "You picked up \"" + s.obj.Description() + "\"\n"
 	} 
-	return s.player.name + " said " + "\"" + s.obj.Description() + "\".\n"
+	return s.player.name + " picked up " + "\"" + s.obj.Description() + "\".\n"
+}
+
+func (s PlayerDropStimulus) StimType() string { return "drop" }
+func (s PlayerDropStimulus) Description(p Perceiver) string {
+	playerReceiver, ok := p.(*Player)
+	if ok && s.player.ID() == playerReceiver.id {
+		return "You dropped \"" + s.obj.Description() + "\"\n"
+	} 
+	return s.player.name + " dropped " + "\"" + s.obj.Description() + "\".\n"
 }
