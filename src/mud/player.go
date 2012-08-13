@@ -211,7 +211,7 @@ func GoExit(p *Player, args []string) {
 
 	room.WithExit(args[0], func(foundExit *RoomExitInfo) {
 		PlacePlayerInRoom(foundExit.OtherSide(), p)
-		p.WriteString("Should go through exit " + foundExit.Name())
+		Look(p, []string{})
 	}, func() {
 		p.WriteString("No visible exit " + args[0] + ".\n")
 	})

@@ -1,6 +1,6 @@
 package mud
 
-import ("strconv")
+import ("strconv"; "strings")
 
 func init() {
 	PersistentKeys["room"] = []string{ "id", "text", "persisters" }
@@ -167,8 +167,11 @@ func (r *Room) Describe(toPlayer *Player) string {
 	roomText := r.text
 	objectsText := r.DescribeObjects(toPlayer)
 	playersText := r.DescribePlayers(toPlayer)
+	exitsText := "Exits: " + r.ExitNames()
 	
-	return roomText + Divider() + objectsText + Divider() + playersText
+	return roomText + Divider() + 
+		objectsText + Divider() + 
+		playersText + exitsText
 }
 
 func (r *Room) DescribeObjects(toPlayer *Player) string {
@@ -183,14 +186,17 @@ func (r *Room) DescribeObjects(toPlayer *Player) string {
 }
 
 func (r *Room) DescribePlayers(toPlayer *Player) string {
-	objTextBuf := "Other people present:\n"
-	for _,player := range r.players {
-		if player.id != toPlayer.id {
-			objTextBuf += player.name
-			objTextBuf += "\n"
+	if len(r.players) > 1 {
+		objTextBuf := "Other people present:\n"
+		for _,player := range r.players {
+			if player.id != toPlayer.id {
+				objTextBuf += player.name
+				objTextBuf += "\n"
+			}
 		}
+		return objTextBuf
 	}
-	return objTextBuf
+	return ""
 }
 
 func (r *Room) AddChild(o interface{}) {
@@ -322,4 +328,12 @@ type PhysObjReceiver func(p *PhysicalObject)
 
 func (r *Room) WithPhysObjects(handler PhysObjReceiver) {
 	for _,p := range(r.physObjects) { handler(&p) }
+}
+
+func (r *Room) ExitNames() string {
+	exitNames := make([]string, len(r.exits))
+	for i,exit := range(r.exits) {
+		exitNames[i] = exit.Name()
+	}
+	return strings.Join(exitNames, ", ")
 }
