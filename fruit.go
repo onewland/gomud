@@ -11,38 +11,26 @@ type Fruit struct {
 	room *mud.Room
 	name string
 	ping chan int
-	stage fruitStage
+	stage LifeStage
 	lastChange int
 	visible bool
 	hasMadePlant bool
 }
 
-type fruitStage struct {
-	stageNo int
-	name string
-	// Time at current stage, before next change
-	// -1 indicates last stage
-	stageChangeDelay int
-}
-
-var fruitStages map[int]fruitStage
-
-func addFs(fs fruitStage, fruitStages map[int]fruitStage) {
-	fruitStages[fs.stageNo] = fs
-}
+var fruitStages map[int]LifeStage
 
 func init() {
-	fruitStages = make(map[int]fruitStage)
-	underripe := fruitStage{stageNo: 0, name: "underripe", stageChangeDelay: 10000}
-	ripe := fruitStage{stageNo: 1, name: "ripe", stageChangeDelay: 40000}
-	rotten := fruitStage{stageNo: 2, name: "rotten", stageChangeDelay: 10000}
-        pit := fruitStage{stageNo: 3, name: "pit", stageChangeDelay: 10000}
-	defunct := fruitStage{stageNo: 4, name: "defunct", stageChangeDelay: -1}
-	addFs(underripe, fruitStages)
-	addFs(ripe, fruitStages)
-	addFs(rotten, fruitStages)
-	addFs(pit, fruitStages)
-	addFs(defunct, fruitStages)
+	fruitStages = make(map[int]LifeStage)
+	underripe := LifeStage{StageNo: 0, Name: "underripe", StageChangeDelay: 10000}
+	ripe := LifeStage{StageNo: 1, Name: "ripe", StageChangeDelay: 40000}
+	rotten := LifeStage{StageNo: 2, Name: "rotten", StageChangeDelay: 10000}
+        pit := LifeStage{StageNo: 3, Name: "pit", StageChangeDelay: 10000}
+	defunct := LifeStage{StageNo: 4, Name: "defunct", StageChangeDelay: -1}
+	addLs(underripe, fruitStages)
+	addLs(ripe, fruitStages)
+	addLs(rotten, fruitStages)
+	addLs(pit, fruitStages)
+	addLs(defunct, fruitStages)
 }
 
 func (f Fruit) Visible() bool { return f.visible }
@@ -51,7 +39,7 @@ func (f Fruit) TextHandles() []string {
 	return []string{f.name}
 }
 func (f Fruit) Description() string {
-	return fmt.Sprintf("A(n) %s %s", f.stage.name, f.name);
+	return fmt.Sprintf("A(n) %s %s", f.stage.Name, f.name);
 }
 
 func (f *Fruit) SetRoom(r *mud.Room) { f.room = r }
@@ -64,9 +52,9 @@ type FruitTasteStimulus struct {
 
 func (f *Fruit) Ping() chan int { return f.ping }
 func (f *Fruit) Age(now int) {
-	if(f.stage.stageChangeDelay > 0) {
+	if(f.stage.StageChangeDelay > 0) {
 		mud.Log("Age next stage clause, room =",f.Room())
-		nextStage := (f.stage.stageNo + 1)
+		nextStage := (f.stage.StageNo + 1)
 		f.stage = fruitStages[nextStage]
 		f.lastChange = now
 	} else if !f.hasMadePlant {
@@ -82,7 +70,7 @@ func (f *Fruit) Age(now int) {
 func (f *Fruit) UpdateTimeLoop() {
 	for {
 		now := <- f.ping
-		if now > (f.lastChange + f.stage.stageChangeDelay) {
+		if now > (f.lastChange + f.stage.StageChangeDelay) {
 			f.Age(now)
 		}
 	}

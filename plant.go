@@ -11,49 +11,37 @@ type Plant struct {
 	room *mud.Room
 	name string
 	ping chan int
-	stage plantStage
+	stage LifeStage
 	lastChange int
 	hasMadeTree bool
 }
 
-type plantStage struct {
-	stageNo int
-	name string
-	// Time at current stage, before next change
-	// -1 indicates last stage
-	stageChangeDelay int
-}
-
-var plantStages map[int]plantStage
+var plantStages map[int]LifeStage
 
 func init() {
-	plantStages = make(map[int]plantStage)
-	hiddenSeed := plantStage{stageNo: 0, name: "hidden-sprout", stageChangeDelay: 10000}
-	sprout := plantStage{stageNo: 1, name: "sprout", stageChangeDelay: 20000}
-	stalk := plantStage{stageNo: 2, name: "stalk", stageChangeDelay: 40000}
-	miniTree := plantStage{stageNo: 3, name: "infant tree", stageChangeDelay: 20000}
-	defunct := plantStage{stageNo: 4, name: "defunct", stageChangeDelay: -1}
-	addPs(hiddenSeed, plantStages)
-	addPs(sprout, plantStages)
-	addPs(stalk, plantStages)
-	addPs(miniTree, plantStages)
-	addPs(defunct, plantStages)
-}
-
-func addPs(ps plantStage, plantStages map[int]plantStage) {
-	plantStages[ps.stageNo] = ps
+	plantStages = make(map[int]LifeStage)
+	hiddenSeed := LifeStage{StageNo: 0, Name: "hidden-sprout", StageChangeDelay: 10000}
+	sprout := LifeStage{StageNo: 1, Name: "sprout", StageChangeDelay: 20000}
+	stalk := LifeStage{StageNo: 2, Name: "stalk", StageChangeDelay: 40000}
+	miniTree := LifeStage{StageNo: 3, Name: "infant tree", StageChangeDelay: 20000}
+	defunct := LifeStage{StageNo: 4, Name: "defunct", StageChangeDelay: -1}
+	addLs(hiddenSeed, plantStages)
+	addLs(sprout, plantStages)
+	addLs(stalk, plantStages)
+	addLs(miniTree, plantStages)
+	addLs(defunct, plantStages)
 }
 
 func (p Plant) Visible() bool { 
-	return (p.stage.name != "hidden-sprout" && 
-		p.stage.name != "defunct")
+	return (p.stage.Name != "hidden-sprout" && 
+		p.stage.Name != "defunct")
 }
 func (p Plant) Carryable() bool { return false }
 func (p Plant) TextHandles() []string {
 	return []string{p.name}
 }
 func (p Plant) Description() string {
-	return fmt.Sprintf("A %s.\n", p.stage.name);
+	return fmt.Sprintf("A %s.\n", p.stage.Name);
 }
 
 func (p *Plant) SetRoom(r *mud.Room) { p.room = r }
@@ -61,8 +49,8 @@ func (p Plant) Room() *mud.Room { return p.room }
 
 func (p *Plant) Ping() chan int { return p.ping }
 func (p *Plant) Age(now int) {
-	if(p.stage.stageChangeDelay > 0) {
-		nextStage := (p.stage.stageNo + 1)
+	if(p.stage.StageChangeDelay > 0) {
+		nextStage := (p.stage.StageNo + 1)
 		p.stage = plantStages[nextStage]
 		p.lastChange = now
 	} else if !p.hasMadeTree {
@@ -78,7 +66,7 @@ func (p *Plant) Age(now int) {
 func (p *Plant) UpdateTimeLoop() {
 	for {
 		now := <- p.ping
-		if now > (p.lastChange + p.stage.stageChangeDelay) {
+		if now > (p.lastChange + p.stage.StageChangeDelay) {
 			p.Age(now)
 		}
 	}
