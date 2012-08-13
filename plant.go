@@ -4,9 +4,8 @@ import ("mud"
 	"fmt")
 
 type Plant struct {
-//	mud.Persister
 	mud.PhysicalObject
-	mud.TimeListener
+	AgingTimeListener
 	universe *mud.Universe
 	room *mud.Room
 	name string
@@ -24,6 +23,7 @@ func init() {
 	sprout := LifeStage{StageNo: 1, Name: "sprout", StageChangeDelay: 20000}
 	stalk := LifeStage{StageNo: 2, Name: "stalk", StageChangeDelay: 40000}
 	miniTree := LifeStage{StageNo: 3, Name: "infant tree", StageChangeDelay: 20000}
+	miniTree.Post = BecomeTree
 	defunct := LifeStage{StageNo: 4, Name: "defunct", StageChangeDelay: -1}
 	addLs(hiddenSeed, plantStages)
 	addLs(sprout, plantStages)
@@ -48,27 +48,21 @@ func (p *Plant) SetRoom(r *mud.Room) { p.room = r }
 func (p Plant) Room() *mud.Room { return p.room }
 
 func (p *Plant) Ping() chan int { return p.ping }
-func (p *Plant) Age(now int) {
-	if(p.stage.StageChangeDelay > 0) {
-		nextStage := (p.stage.StageNo + 1)
-		p.stage = plantStages[nextStage]
-		p.lastChange = now
-	} else if !p.hasMadeTree {
+func (p Plant) LastChange() int { return p.lastChange }
+func (p Plant) LifeStages() map[int]LifeStage { return plantStages }
+func (p Plant) Stage() LifeStage { return p.stage }
+func (p *Plant) SetStage(l LifeStage) { p.stage = l }
+func (p *Plant) SetStageChanged(now int) { p.lastChange = now }
+
+func BecomeTree(atl AgingTimeListener) {
+	p := atl.(*Plant)
+	if !p.hasMadeTree {
 		mud.Log("Age MakeTree clause, room =",p.Room())
 		if(TreeCount(p.Room()) < 3) {
 			t := MakeFruitTree(p.universe, p.name)
 			p.Room().AddChild(t)
 		}
 		p.hasMadeTree = true
-	}
-}
-
-func (p *Plant) UpdateTimeLoop() {
-	for {
-		now := <- p.ping
-		if now > (p.lastChange + p.stage.StageChangeDelay) {
-			p.Age(now)
-		}
 	}
 }
 
@@ -82,7 +76,7 @@ func MakePlant(u *mud.Universe, name string) *Plant {
 //	u.Persistents = append(u.Persistents, f)
 	u.TimeListeners = append(u.TimeListeners, p)
 
-	go p.UpdateTimeLoop()
+	go AgeLoop(p)
 
 	return p
 }
