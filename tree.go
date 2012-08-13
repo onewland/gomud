@@ -55,11 +55,18 @@ func (f *FruitTree) Bloom() {
 }
 
 func (f *FruitTree) UpdateTimeLoop() {
+	base := 300000
+	margin := 1250
+
 	for {
 		now := <- f.ping
+		if f.nextFlowering == -1 {
+			f.nextFlowering = now + base + (rand.Int()%margin)- 
+				(rand.Int()%margin); 
+		}
 		if now == f.nextFlowering {
-			f.nextFlowering = now + 30000 + (rand.Int()%1250)- 
-				(rand.Int()%1250);
+			f.nextFlowering = now + base + (rand.Int()%margin)- 
+				(rand.Int()%margin);
 			f.Bloom()
 		}
 	}
@@ -87,10 +94,23 @@ func (f *FruitTree) DBFullName() string {
 	return fmt.Sprintf("fruitTree:%d",f.id)
 }
 
+func TreeCount(r *mud.Room) int {
+	count := 0
+	r.WithPhysObjects(func(p *mud.PhysicalObject) {
+		po := *p
+		if _, isPlant := po.(*FruitTree); isPlant {
+			count += 1
+		}
+	})
+	return count
+}
+
+
 func MakeFruitTree(u *mud.Universe, fruitName string) *FruitTree {
 	ft := new(FruitTree)
 	ft.universe = u
 	ft.fruitName = fruitName
+	ft.nextFlowering = -1
 	ft.ping = make(chan int)
 
 	u.Persistents = append(u.Persistents, ft)

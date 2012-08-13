@@ -5,7 +5,7 @@ import ("mud"
 
 func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 	puritan := MakePuritan()
-	theBall := Ball{}
+	theBall := new(Ball)
 	theClock := MakeClock()
 	ff := MakeFlipFlop(universe)
 	universe.Persistents = []mud.Persister{ff}

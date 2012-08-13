@@ -317,3 +317,9 @@ func (r *Room) WithExit(name string, found FoundExit, notFound func()) {
 
 func (r *Room) SetText(text string) { r.text = text }
 func (r *Room) Text() string { return r.text }
+
+type PhysObjReceiver func(p *PhysicalObject)
+
+func (r *Room) WithPhysObjects(handler PhysObjReceiver) {
+	for _,p := range(r.physObjects) { handler(&p) }
+}

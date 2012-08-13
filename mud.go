@@ -13,6 +13,8 @@ func main() {
 		"flush DB and seed universe with prototype's seed.go")
 	flagUseLoad := flag.Bool("load", true, 
 		"load objects from DB")
+	flagSpeedupFactor := flag.Float64("speedup", 1.0,
+		"factor to speed up heartbeat loop (2.0 means heartbeats come twice as often)")
 	flag.Usage = func() {
 		flag.PrintDefaults()
 	}
@@ -40,7 +42,7 @@ func main() {
 	mud.Log("len(rooms) =",len(universe.Rooms))
 
 	go universe.HandlePersist()
-	go universe.HeartbeatLoop()
+	go universe.HeartbeatLoop(*flagSpeedupFactor)
 
 	if err == nil {
 		go mud.PlayerListManager(playerRemoveChan, universe.Players)
@@ -53,6 +55,7 @@ func main() {
 				newP := universe.AcceptConnAsPlayer(conn, idGen)
 
 				mud.PlacePlayerInRoom(theRoom, newP)
+				mud.Look(newP, []string{})
 
 				go newP.ReadLoop(playerRemoveChan)
 				go newP.ExecCommandLoop()

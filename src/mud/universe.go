@@ -63,12 +63,12 @@ func (u *Universe) AddPersistent(p Persister) {
 }
 
 
-func (u *Universe) HeartbeatLoop() {
+func (u *Universe) HeartbeatLoop(speedupFactor float64) {
 	for n:=0 ; ; n++ {
 		for _, l := range(u.TimeListeners) {
 			l.Ping() <- n
 		}
-		time.Sleep(1*time.Millisecond)
+		time.Sleep(time.Duration(int(1000000/speedupFactor))*time.Nanosecond)
 	}
 }
 
