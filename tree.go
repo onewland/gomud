@@ -2,7 +2,6 @@ package main
 
 import ("fmt"
 	"mud"
-	"math/rand"
 	"strconv")
 
 func init() {
@@ -61,12 +60,10 @@ func (f *FruitTree) UpdateTimeLoop() {
 	for {
 		now := <- f.ping
 		if f.nextFlowering == -1 {
-			f.nextFlowering = now + base + (rand.Int()%margin)- 
-				(rand.Int()%margin); 
+			f.nextFlowering = now + randRange(base,margin)
 		}
 		if now == f.nextFlowering {
-			f.nextFlowering = now + base + (rand.Int()%margin)- 
-				(rand.Int()%margin);
+			f.nextFlowering = now + randRange(base,margin)
 			f.Bloom()
 		}
 	}
