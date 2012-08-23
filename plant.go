@@ -57,12 +57,14 @@ func (p *Plant) SetStageChanged(now int) { p.lastChange = now }
 func BecomeTree(atl AgingTimeListener) {
 	p := atl.(*Plant)
 
-	mud.Log("Age MakeTree clause, room =",p.Room())
-	if(TreeCount(p.Room()) < 3) {
-		t := MakeFruitTree(p.universe, p.name)
-		p.Room().AddChild(t)
-	} else {
-		p.Room().Actions() <- mud.VanishAction{Target: p}
+	if(p.Room() != nil) {
+		mud.Log("Age MakeTree clause, room =",p.Room())
+		if(TreeCount(p.Room()) < 3) {
+			t := MakeFruitTree(p.universe, p.name)
+			p.Room().AddChild(t)
+		} else {
+			p.Room().Actions() <- mud.VanishAction{Target: p}
+		}
 	}
 }
 
