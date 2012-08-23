@@ -20,6 +20,16 @@ func FieldJoin(sep string, args... string) string {
 	return strings.Join(args, sep)
 }
 
+func (t *TinyDB) RedisGet(k string) (string, error) {
+	bytes, error := t.dbConn.Get(k)
+	str := string(bytes)
+	return str, error
+}
+
+func (t *TinyDB) KeyExists(k string) (bool, error) {
+	return t.dbConn.Exists(k)
+}
+
 func (t *TinyDB) RedisSet(k string, v interface{}) {
 	switch ty := v.(type) {
 	case string:

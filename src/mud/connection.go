@@ -5,21 +5,32 @@ import ("net"
 
 type UserConnection struct {
 	socket net.Conn
+	outOfBand bool
 	done chan bool
 	FromUser chan string
 	ToUser chan string
 	OnDisconnect func()
+	State ConnectionState
+	Data map[string]interface{}
 }
 
-func MakeUserConnection(socket net.Conn) *UserConnection {
-	c := new(UserConnection)
-	c.socket = socket
-	c.FromUser = make(chan string, 10)
-	c.ToUser = make(chan string, 10)
-	c.done = make(chan bool, 1)
-	
-	go c.ReadLoop()
-	return c
+type ConnectionState interface {
+	Name() string
+	Init(*UserConnection)
+	Respond(*UserConnection) bool
+}
+
+type UndefinedState struct {
+	ConnectionState
+}
+
+func (s *UndefinedState) Name() string { return "Undefined placeholder" }
+func (s *UndefinedState) Init(c *UserConnection) {
+	c.Write("Connection state undefined, contact admin.\n\r")
+}
+func (s *UndefinedState) Respond(c *UserConnection) bool {
+	c.Close()
+	return true
 }
 
 func init() {
@@ -34,6 +45,21 @@ func init() {
 	colorMap["&white;"] = "\x1b[37m"
 	colorMap["&;"] = "\x1b[0m"
 }
+
+func MakeUserConnection(socket net.Conn, connectState ConnectionState) *UserConnection {
+	c := new(UserConnection)
+	c.socket = socket
+	c.State = connectState
+	c.FromUser = make(chan string, 10)
+	c.ToUser = make(chan string, 10)
+	c.done = make(chan bool, 1)
+	c.outOfBand = true
+	c.Data = make(map[string]interface{})
+	
+	go c.ReadLoop()
+	return c
+}
+
 
 func (c *UserConnection) Close() { 
 	c.done <- true
@@ -51,10 +77,10 @@ func (c *UserConnection) ReadLoop() {
 	rawBuf := make([]byte, 1024)
 	defer c.socket.Close()
 
+	c.State.Init(c)
 	for {
 		select {
 		case <-c.done:
-			Log("c.done = true", c)
 			c.OnDisconnect()
 			return
 		default:
@@ -63,8 +89,10 @@ func (c *UserConnection) ReadLoop() {
 				strCommand := string(rawBuf[:n])
 				c.FromUser <- strings.TrimRight(strCommand,"\n\r")
 			} else {
-				Log("sending c.done = true", c)
 				c.done <- true
+			}
+			if(c.outOfBand) {
+				c.outOfBand = c.State.Respond(c)
 			}
 		}
 	}

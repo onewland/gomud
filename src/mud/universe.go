@@ -1,8 +1,6 @@
 package mud
 
-import ("net"
-	"math/rand"
-	"time"
+import ("time"
         "redis")
 
 type MakeHandler func (*Universe, *Player, []string)
@@ -32,34 +30,19 @@ func NewBasicUniverse() *Universe {
 	return u
 }
 
-func (u *Universe) AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Player {
-	c := MakeUserConnection(conn)
-
-	// Make distinct names randomly
-	colors := []string{"Red", "Blue", "Yellow"}
-	animals := []string{"Pony", "Fox", "Jackal"}
-	color := colors[rand.Intn(3)]
-	animal := animals[rand.Intn(3)]
-	p := new(Player)
-	p.id = idSource()
-	p.name = (color + animal)
-	p.Conn = c
-	p.quitting = make(chan bool, 1)
-	p.commandBuf = make(chan string, 10)
-	p.commandDone = make(chan bool, 1)
-	p.stimuli = make(chan Stimulus, 5)
-	p.inventory = make([]PhysicalObject, 10)
-	p.Universe = u
+func (u *Universe) PlayerFromUserConn(conn *UserConnection, idSource func() int) *Player {
+	name := conn.Data["playerName"].(string)
+	p := CreateOrLoadPlayer(u, name)
+	p.Conn = conn
 	u.Players[p.id] = p
 	Log(p.name, "joined, ID =",p.id)
 	Log(len(u.Players), "player[s] online.")
 
-	c.OnDisconnect = func() {
+	conn.OnDisconnect = func() {
 		Log(p.name, "Disconnecting")
 		p.quitting <- true
 		p.commandDone <- true
 	}
-
 	return p
 }
 

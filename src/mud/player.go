@@ -1,25 +1,97 @@
 package mud
 
-import ("strings"
+import ("strconv"
+	"strings"
 	"fmt")
 
+func init() {
+	PersistentKeys["player"] = []string{ "id", "name", "money" }
+}
+
+type Currency int
 type PerceiveTest func(p Player, s Stimulus) bool
+
 var PlayerPerceptions map[string]PerceiveTest
 
 type Player struct {
 	Talker
 	Perceiver
 	PhysicalObject
+	Persister
 	Conn *UserConnection
 	id int
 	room *Room
 	name string
 	inventory []PhysicalObject
+	money Currency
 	Universe *Universe
 	commandBuf chan string
 	stimuli chan Stimulus
 	quitting chan bool
 	commandDone chan bool
+}
+
+func PlayerExists(u *Universe, name string) (bool, error) {
+	return u.Store.KeyExists(FieldJoin(":","player","byName",name))
+}
+
+func CreateOrLoadPlayer(u *Universe, name string) *Player {
+	var p *Player
+	if exists, _ := PlayerExists(u, name); exists {
+		Log("Loading player",name)
+		p = LoadPlayer(u, name)
+	} else {
+		Log("Creating player",name)
+		p = MakePlayer(u, name)
+		p.Save()
+	}
+	return p
+}
+
+func MakePlayer(u *Universe, name string) *Player {
+	p := new(Player)
+	p.name = name
+	p.quitting = make(chan bool, 1)
+	p.commandBuf = make(chan string, 10)
+	p.commandDone = make(chan bool, 1)
+	p.stimuli = make(chan Stimulus, 5)
+	p.inventory = make([]PhysicalObject, 10)
+	p.Universe = u
+	u.Persistents = append(u.Persistents, p)
+	return p
+}
+
+func LoadPlayer(u *Universe, name string) *Player {
+	p := MakePlayer(u, name)
+	playerId, _ := u.Store.RedisGet(FieldJoin(":","player","byName",name))
+	vals := u.Store.LoadStructure(PersistentKeys["player"],
+		FieldJoin(":","player",playerId))
+	p.id, _ = strconv.Atoi(vals["id"].(string))
+	p.name = vals["name"].(string)
+	money, _ := strconv.Atoi(vals["money"].(string))
+	p.money = Currency(money)
+	return p
+}
+
+func (p *Player) PersistentValues() map[string]interface{} {
+	vals := make(map[string]interface{})
+	if(p.id > 0) {
+		vals["id"] = strconv.Itoa(p.id)
+	}
+	vals["name"] = p.name
+	vals["money"] = strconv.Itoa(int(p.money))
+	return vals
+}
+
+func (p *Player) Save() string {
+	outID := p.Universe.Store.SaveStructure("player",p.PersistentValues())
+	if(p.id == 0) {
+		p.id, _ = strconv.Atoi(outID)
+		p.Universe.Store.RedisSet(
+			FieldJoin(":","player","byName",p.name),
+			outID)	
+	}
+	return outID
 }
 
 var colorMap map[string]string
@@ -38,6 +110,7 @@ func init() {
 	GlobalCommands["inv"] = Inv
 	GlobalCommands["quit"] = Quit
 	GlobalCommands["make"] = Make
+	GlobalCommands["profit"] = Profit
 	
 	PlayerPerceptions = make(map[string]PerceiveTest)
 	PlayerPerceptions["enter"] = DoesPerceiveEnter
@@ -177,6 +250,16 @@ func Drop(p *Player, args []string) {
 	}
 }
 
+func Profit(p *Player, args []string) {
+	if len(args) != 1 {
+		p.WriteString("Add money to your inventory with 'profit [amount]'.\n")
+	} else {
+		increase,_ := strconv.Atoi(args[0])
+		p.money += Currency(increase)
+		p.WriteString(args[0] + " bitbux added.\n")
+	}
+}
+
 func Inv(p *Player, args []string) {
 	p.WriteString(Divider())
 	p.WriteString("Inventory: \n")
@@ -186,6 +269,9 @@ func Inv(p *Player, args []string) {
 			p.WriteString("\n")
 		}
 	}
+	p.WriteString("You have ")
+	p.WriteString(strconv.Itoa(int(p.money)))
+	p.WriteString(" bitbux.\n")
 	p.WriteString(Divider())
 }
 
