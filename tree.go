@@ -123,8 +123,8 @@ func LoadFruitTree(u *mud.Universe, id int) interface{} {
 	vals := u.Store.LoadStructure(mud.PersistentKeys["fruitTree"],
 		mud.FieldJoin(":","fruitTree",strconv.Itoa(id)))
 	ft.id = id
-	ft.fruitName, _ = vals["fruitName"].(string)
-	nextFloweringS, _ := vals["nextFlowering"].(string)
+	ft.fruitName = vals["fruitName"].(string)
+	nextFloweringS := vals["nextFlowering"].(string)
 	ft.nextFlowering, _ = strconv.Atoi(nextFloweringS)
 	return ft
 }
