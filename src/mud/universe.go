@@ -33,6 +33,8 @@ func NewBasicUniverse() *Universe {
 }
 
 func (u *Universe) AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Player {
+	c := MakeUserConnection(conn)
+
 	// Make distinct names randomly
 	colors := []string{"Red", "Blue", "Yellow"}
 	animals := []string{"Pony", "Fox", "Jackal"}
@@ -41,16 +43,23 @@ func (u *Universe) AcceptConnAsPlayer(conn net.Conn, idSource func() int) *Playe
 	p := new(Player)
 	p.id = idSource()
 	p.name = (color + animal)
-	p.sock = conn
+	p.Conn = c
 	p.quitting = make(chan bool, 1)
 	p.commandBuf = make(chan string, 10)
-	p.commandDone = make(chan bool)
+	p.commandDone = make(chan bool, 1)
 	p.stimuli = make(chan Stimulus, 5)
 	p.inventory = make([]PhysicalObject, 10)
 	p.Universe = u
 	u.Players[p.id] = p
 	Log(p.name, "joined, ID =",p.id)
 	Log(len(u.Players), "player[s] online.")
+
+	c.OnDisconnect = func() {
+		Log(p.name, "Disconnecting")
+		p.quitting <- true
+		p.commandDone <- true
+	}
+
 	return p
 }
 

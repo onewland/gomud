@@ -1,9 +1,7 @@
 package mud
 
-import ("net"
-	"strings"
-	"fmt"
-	"io")
+import ("strings"
+	"fmt")
 
 type PerceiveTest func(p Player, s Stimulus) bool
 var PlayerPerceptions map[string]PerceiveTest
@@ -12,10 +10,10 @@ type Player struct {
 	Talker
 	Perceiver
 	PhysicalObject
+	Conn *UserConnection
 	id int
 	room *Room
 	name string
-	sock net.Conn
 	inventory []PhysicalObject
 	Universe *Universe
 	commandBuf chan string
@@ -31,17 +29,6 @@ func (p Player) Name() string { return p.name }
 func (p Player) StimuliChannel() chan Stimulus { return p.stimuli }
 
 func init() {
-	colorMap = make(map[string]string)
-	colorMap["&black;"] = "\x1b[30m"
-	colorMap["&red;"] = "\x1b[31m"
-	colorMap["&green;"] = "\x1b[32m"
-	colorMap["&yellow;"] = "\x1b[33m"
-	colorMap["&blue;"] = "\x1b[34m"
-	colorMap["&magenta;"] = "\x1b[35m"
-	colorMap["&cyan;"] = "\x1b[36m"
-	colorMap["&white;"] = "\x1b[37m"
-	colorMap["&;"] = "\x1b[0m"
-
 	GlobalCommands["who"] = Who
 	GlobalCommands["look"] = Look
 	GlobalCommands["say"] = Say
@@ -66,7 +53,7 @@ func (p Player) Room() *Room {
 
 func RemovePlayerFromRoom(r *Room, p *Player) {
 	delete(r.players, p.id)
-	r.RemovePerceiver(p)
+	r.RemoveChild(p)
 }
 
 func PlacePlayerInRoom(r *Room, p *Player) {
@@ -227,24 +214,16 @@ func Make(p *Player, args[] string) {
 }
 
 func (p *Player) ReadLoop(playerRemoveChan chan *Player) {
-	rawBuf := make([]byte, 1024)
-	defer p.sock.Close()
-
 	for ; ; <- p.commandDone {
 		select {
 		case <-p.quitting:
+			Log("quitting in ReadLoop")
 			playerRemoveChan <- p
+			p.WriteString("Goodbye!")
+			p.Conn.Close()
 			return
-		default:
-			n, err := p.sock.Read(rawBuf)
-			if err == nil {
-				strCommand := string(rawBuf[:n])
-				p.commandBuf <- strings.TrimRight(strCommand,"\n\r")
-			} else if err == io.EOF {
-				Log(p.name, "Disconnected")
-				playerRemoveChan <- p
-				return
-			}
+		case c := <- p.Conn.FromUser:
+			p.commandBuf <- c
 		}
 	}
 }
@@ -254,13 +233,7 @@ func (p *Player) HandleStimulus(s Stimulus) {
 	Log(p.name,"receiving stimulus",s.StimType())
 }
 
-func (p *Player) WriteString(str string) {
-	str_acc := str
-	for easyCode, termCode := range colorMap {
-		str_acc = strings.Replace(str_acc, easyCode, termCode, -1)
-	}
-	p.sock.Write([]byte(str_acc))
-}
+func (p *Player) WriteString(str string) { p.Conn.Write(str) }
 
 func (p Player) DoesPerceive(s Stimulus) bool {
 	perceptTest := PlayerPerceptions[s.StimType()]
