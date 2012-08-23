@@ -59,14 +59,13 @@ func (f *Fruit) SetStageChanged(now int) { f.lastChange = now }
 
 func BecomePlant(atl AgingTimeListener) {
 	f := atl.(*Fruit)
-	if !f.hasMadePlant {
-		mud.Log("Age MakePlant clause, room =",f.Room())
-		p := MakePlant(f.universe, f.name)
-		f.visible = false
-		f.Room().AddChild(p)
-		p.SetRoom(f.Room())
-		f.hasMadePlant = true
-	}
+	
+	mud.Log("Age MakePlant clause, room =",f.Room())
+	p := MakePlant(f.universe, f.name)
+	f.Room().AddChild(p)
+	p.SetRoom(f.Room())
+
+	p.Room().Actions() <- mud.VanishAction{Target: f}
 }
 
 func MakeFruit(u *mud.Universe, name string) *Fruit {

@@ -209,9 +209,36 @@ func (r *Room) AddChild(o interface{}) {
 	if(perceives) { r.AddPerceiver(oAsPerceiver) }
 }
 
+func (r *Room) RemoveChild(o interface{}) {
+	oAsPhysObj, isPhysical := o.(PhysicalObject)
+	oAsPersist, persists := o.(Persister)
+	oAsPerceiver, perceives := o.(Perceiver)
+	
+	if(isPhysical) { r.RemovePhysObj(oAsPhysObj) }
+	if(persists) { r.RemovePersistent(oAsPersist) }
+	if(perceives) { r.RemovePerceiver(oAsPerceiver) }
+}
+
 func (r *Room) AddPhysObj(p PhysicalObject) {
 	r.physObjects = append(r.physObjects, p)
 	p.SetRoom(r)
+}
+
+func (r *Room) RemovePhysObj(p PhysicalObject) {
+	for i,listP := range(r.physObjects) {
+		if p == listP {
+			if len(r.physObjects) > 1 {
+				physObjects := append(
+					r.physObjects[:i],
+					r.physObjects[i+1:]...)
+				r.physObjects = physObjects
+			} else {
+				r.physObjects = []PhysicalObject{}
+			}
+			Log("[rm] physical objects = ",r.physObjects)
+			break
+		}
+	}
 }
 
 func (r *Room) AddPerceiver(p Perceiver) {
@@ -227,7 +254,7 @@ func (r *Room) RemovePerceiver(p Perceiver) {
 			} else {
 				r.perceivers = []Perceiver{}
 			}
-			Log("[rm] new perceivers = ",r.perceivers)
+			Log("[rm] perceivers = ",r.perceivers)
 			break
 		}
 	}
@@ -306,6 +333,7 @@ func NewBasicRoom(universe *Universe, rid int, rtext string, physObjs []Physical
 
 	go r.FanOutBroadcasts()
 	go r.ActionQueue()
+
 	return &r
 }
 
@@ -337,3 +365,5 @@ func (r *Room) ExitNames() string {
 	}
 	return strings.Join(exitNames, ", ")
 }
+
+func (r *Room) Actions() chan InterObjectAction { return r.interactionQueue }
