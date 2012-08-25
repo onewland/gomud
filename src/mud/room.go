@@ -27,12 +27,14 @@ type RoomExitInfo struct {
 
 type Room struct {
 	Persister
+	CommandSource
 	id int
 	text string
 	players map[int]Player
 	perceivers []Perceiver
 	Persistents []Persister
 	physObjects []PhysicalObject
+	CommandSources []CommandSource
 	exits []RoomExitInfo
 	stimuliBroadcast chan Stimulus
 	interactionQueue chan InterObjectAction
@@ -203,10 +205,12 @@ func (r *Room) AddChild(o interface{}) {
 	oAsPhysObj, isPhysical := o.(PhysicalObject)
 	oAsPersist, persists := o.(Persister)
 	oAsPerceiver, perceives := o.(Perceiver)
+	oAsCmdSrc, hasCommands := o.(CommandSource)
 	
 	if(isPhysical) { r.AddPhysObj(oAsPhysObj) }
 	if(persists) { r.AddPersistent(oAsPersist) }
 	if(perceives) { r.AddPerceiver(oAsPerceiver) }
+	if(hasCommands) { r.AddCommandSource(oAsCmdSrc) }
 }
 
 func (r *Room) RemoveChild(o interface{}) {
@@ -274,6 +278,26 @@ func (r *Room) RemovePersistent(p Persister) {
 				r.Persistents = []Persister{}
 			}
 			Log("[rm] new Persistents = ",r.Persistents)
+			break
+		}
+	}
+}
+
+func (r *Room) AddCommandSource(p CommandSource) {
+	r.CommandSources = append(r.CommandSources, p)
+}
+
+func (r *Room) RemoveCommandSource(p CommandSource) {
+	for i,listP := range(r.CommandSources) {
+		if p == listP {
+			if len(r.CommandSources) > 1 {
+				commanders := append(r.CommandSources[:i],
+					r.CommandSources[i+1:]...)
+				r.CommandSources = commanders
+			} else {
+				r.CommandSources = []CommandSource{}
+			}
+			Log("[rm] new CommandSources = ",r.CommandSources)
 			break
 		}
 	}
@@ -367,3 +391,13 @@ func (r *Room) ExitNames() string {
 }
 
 func (r *Room) Actions() chan InterObjectAction { return r.interactionQueue }
+
+func (r *Room) Commands() map[string]Command {
+	localCommands := make(map[string]Command)
+	for _, source := range(r.CommandSources) {
+		for commandName, command := range(source.Commands()) {
+			localCommands[commandName] = command
+		}
+	}
+	return localCommands
+}

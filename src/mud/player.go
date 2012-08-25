@@ -43,6 +43,7 @@ func CreateOrLoadPlayer(u *Universe, name string) *Player {
 	} else {
 		Log("Creating player",name)
 		p = MakePlayer(u, name)
+		p.money = 5000
 		p.Save()
 	}
 	return p
@@ -188,6 +189,8 @@ func (p *Player) ExecCommandLoop() {
 			nextCommandArgs := nextCommandSplit[1:]
 			if c, ok := GlobalCommands[nextCommandRoot]; ok {
 				c(p, nextCommandArgs)
+			} else if c, ok := p.Room().Commands()[nextCommandRoot]; ok{
+				c(p, nextCommandArgs)
 			} else {
 				p.WriteString("Command '" + nextCommandRoot + "' not recognized.\n")
 			}
@@ -251,6 +254,7 @@ func Drop(p *Player, args []string) {
 }
 
 func Profit(p *Player, args []string) {
+	Log("[WARNING] Profit command should not be in production")
 	if len(args) != 1 {
 		p.WriteString("Add money to your inventory with 'profit [amount]'.\n")
 	} else {
@@ -374,4 +378,21 @@ func (p Player) PerceiveList(context PerceiveContext) PerceiveMap {
 	}
 
 	return physObjects
+}
+
+func (p *Player) Money() Currency {
+	return p.money
+}
+func (p *Player) AdjustMoney(amount Currency) {
+	p.money += amount
+}
+
+func (p *Player) ReceiveObject(o *PhysicalObject) bool {
+	for idx, slot := range(p.inventory) {
+		if(slot == nil) {
+			p.inventory[idx] = *o
+			return true
+		}
+	}
+	return false
 }
