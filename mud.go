@@ -17,7 +17,8 @@ type NamePrompt struct {
 
 func (n *NamePrompt) Name() string { return "name prompt" }
 func (n *NamePrompt) Init(c *mud.UserConnection) {
-	c.Write("Please enter your name:\n\r")
+	c.Write(Preamble)
+	c.Write("Welcome. Please enter your name:\n\r")
 }
 func (n *NamePrompt) Respond(c *mud.UserConnection) bool {
 	playerName := <- c.FromUser

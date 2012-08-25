@@ -35,6 +35,7 @@ func (s *UndefinedState) Respond(c *UserConnection) bool {
 
 func init() {
 	colorMap = make(map[string]string)
+	colorMap["&dim;"] = "\x1b[2m"
 	colorMap["&black;"] = "\x1b[30m"
 	colorMap["&red;"] = "\x1b[31m"
 	colorMap["&green;"] = "\x1b[32m"
