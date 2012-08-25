@@ -85,7 +85,7 @@ func (p PurchaseAction) Targets() []mud.PhysicalObject {
 }
 func (p PurchaseAction) Source() mud.PhysicalObject { return p.buyer }
 func (p PurchaseAction) Exec() {
-	if p.buyer.Money() > p.price {
+	if p.buyer.Money() >= p.price {
 		if p.buyer.ReceiveObject(&p.saleObject) {
 			p.buyer.AdjustMoney(-p.price)
 			p.buyer.WriteString("Thanks for your purchase!\n\r")
