@@ -42,7 +42,7 @@ type Persister interface {
 
 func (u *Universe) HandlePersist() {
 	for {
-		for _,p := range(u.Persistents) {
+		for _,p := range(u.Persistents()) {
 			p.Save()
 		}
 		time.Sleep(300 * time.Millisecond)

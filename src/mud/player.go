@@ -65,7 +65,7 @@ func MakePlayer(u *Universe, name string) *Player {
 	p.saveLoader = new(playerPersister)
 	p.saveLoader.player = p
 	p.Universe = u
-	u.Persistents = append(u.Persistents, p.saveLoader)
+	u.Add(p)
 	return p
 }
 

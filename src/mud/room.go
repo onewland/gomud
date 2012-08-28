@@ -104,7 +104,7 @@ func LoadRoomConn(universe *Universe, id int) *SimpleRoomConnection {
 	roomBId,_ := strconv.Atoi(roomBIdStr)
 	rc := conn(universe.Rooms[roomAId],universe.Rooms[roomBId])
 	rc.id = id
-	universe.AddPersistent(rc)
+	universe.Add(rc)
 	return rc
 }
 
@@ -224,7 +224,7 @@ func (r *Room) Broadcast(s Stimulus) {
 	r.stimuliBroadcast <- s
 }
 
-func (r *Room) PersistentValues() map[string]interface{} {
+func (r Room) PersistentValues() map[string]interface{} {
 	vals := make(map[string]interface{})
 	if(r.id > 0) {
 		vals["id"] = strconv.Itoa(r.id)
@@ -268,14 +268,14 @@ func NewBasicRoom(universe *Universe, rid int, rtext string) *Room {
 	r.players = make(map[int]*Player)
 	r.exits = []RoomExitInfo{}
 	r.children = MakeFlexContainer(
-		"PhysicalObjects", 
-		"Persistents", 
+		"PhysicalObjects",
+		"Persistents",
 		"RoomPhysicalObjects",
 		"Perceivers",
 		"CommandSources")
 	r.children.Meta["Room"] = &r
 	universe.Rooms[r.id] = &r
-	universe.Persistents = append(universe.Persistents, &r)
+	universe.Add(&r)
 
 	go r.FanOutBroadcasts()
 	go r.ActionQueue()

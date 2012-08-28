@@ -8,8 +8,9 @@ func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 	theBall := new(Ball)
 	theClock := MakeClock()
 	ff := MakeFlipFlop(universe)
-	universe.Persistents = []mud.Persister{ff}
-	universe.TimeListeners = []mud.TimeListener{theClock}
+
+	universe.Add(ff)
+	universe.Add(theClock)
 
 	room := mud.NewBasicRoom(universe, 0, "You are in a bedroom.")
 	room.AddChild(theBall)
@@ -18,14 +19,14 @@ func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 	room.AddChild(ff)
 	puritan.room = room
 
-	room2 := mud.NewBasicRoom(universe, 0, "You are in a bathroom.")
+	room2 := mud.NewBasicRoom(universe, 1, "You are in a bathroom.")
 
 	tree := MakeFruitTree(universe, "peach")
 	room2.AddChild(tree)
 	tree.room = room2
 
 	src := mud.ConnectEastWest(room, room2)
-	universe.AddPersistent(src)
+	universe.Add(src)
 
 	return room
 }

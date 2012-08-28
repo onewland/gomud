@@ -75,8 +75,7 @@ func MakePlant(u *mud.Universe, name string) *Plant {
 	p.ping = make(chan int)
 	p.stage = plantStages[0]
 
-//	u.Persistents = append(u.Persistents, f)
-	u.TimeListeners = append(u.TimeListeners, p)
+	u.Add(p)
 
 	go AgeLoop(p)
 

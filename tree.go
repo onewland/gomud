@@ -110,8 +110,7 @@ func MakeFruitTree(u *mud.Universe, fruitName string) *FruitTree {
 	ft.nextFlowering = -1
 	ft.ping = make(chan int)
 
-	u.Persistents = append(u.Persistents, ft)
-	u.TimeListeners = append(u.TimeListeners, ft)
+	u.Add(ft)
 
 	go ft.UpdateTimeLoop()
 

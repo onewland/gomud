@@ -8,8 +8,7 @@ type MakeHandler func (*Universe, *Player, []string)
 type Universe struct {
 	Players map[int]*Player
 	Rooms map[int]*Room
-	TimeListeners []TimeListener
-	Persistents []Persister
+	children *FlexContainer
 	Maker MakeHandler
 	Store *TinyDB
 	dbConn redis.Client
@@ -19,6 +18,7 @@ func NewBasicUniverse() *Universe {
 	u := new(Universe)
 	u.Players = make(map[int]*Player)
 	u.Rooms = make(map[int]*Room)
+	u.children = MakeFlexContainer("Persistents", "TimeListeners")
 	spec := redis.DefaultSpec().Db(3)
 	client, err := redis.NewSynchClientWithSpec(spec)
 	if(err != nil) {
@@ -28,6 +28,14 @@ func NewBasicUniverse() *Universe {
 		u.Store = NewTinyDB(client)
 	}
 	return u
+}
+
+func (u *Universe) TimeListeners() []TimeListener {
+	return castTimeListeners(u.children.AllObjects["TimeListeners"])
+}
+
+func (u *Universe) Persistents() []Persister {
+	return castAsPersistents(u.children.AllObjects["Persistents"])
 }
 
 func (u *Universe) PlayerFromUserConn(conn *UserConnection, idSource func() int) *Player {
@@ -50,14 +58,14 @@ func (u *Universe) ClearDB() {
 	u.Store.Flush()
 }
 
-func (u *Universe) AddPersistent(p Persister) {
-	u.Persistents = append(u.Persistents, p)
+func (u *Universe) Add(o interface{}) {
+	Log("universe add")
+	u.children.Add(o)
 }
-
 
 func (u *Universe) HeartbeatLoop(speedupFactor float64) {
 	for n:=0 ; ; n++ {
-		for _, l := range(u.TimeListeners) {
+		for _, l := range(u.TimeListeners()) {
 			l.Ping() <- n
 		}
 		time.Sleep(time.Duration(int(1000000/speedupFactor))*time.Nanosecond)
@@ -72,4 +80,10 @@ func PlayerListManager(toRemove chan *Player, pList map[int]*Player) {
 		delete(pList, pRemove.id)
 		Log("Removed", pRemove.name, "from player list")
 	}
+}
+
+func castTimeListeners(o []interface{}) []TimeListener {
+	pos := make([]TimeListener, len(o))
+	for i, x := range(o) { po := x.(TimeListener); pos[i] = po }
+	return pos
 }

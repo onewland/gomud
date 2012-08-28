@@ -78,8 +78,7 @@ func MakeFruit(u *mud.Universe, name string) *Fruit {
 	f.stage = fruitStages[0]
 	f.visible = true
 
-//	u.Persistents = append(u.Persistents, f)
-	u.TimeListeners = append(u.TimeListeners, f)
+	u.Add(f)
 
 	go AgeLoop(f)
 

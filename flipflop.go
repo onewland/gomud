@@ -78,7 +78,7 @@ func MakeFlipFlop(u *mud.Universe) *FlipFlop {
 	ff.universe = u
 	ff.lastText = "Unchanged."
 	ff.stimuli = make(chan mud.Stimulus, 5)
-	u.Persistents = append(u.Persistents, ff)
+	u.Add(ff)
 	go mud.StimuliLoop(ff)
 	return ff
 }

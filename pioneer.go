@@ -39,7 +39,7 @@ func BuildPioneerRoom(p *mud.Player, direction string) {
 		p.WriteString("Pioneering only east/west/north/south supported.\n")
 		return
 	}
-	p.Universe.AddPersistent(roomConn)
+	p.Universe.Add(roomConn)
 }
 
 func Rewrite(p *mud.Player, args[] string) {
