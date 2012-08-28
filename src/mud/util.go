@@ -11,7 +11,7 @@ func Divider() string {
 	return "\n-----------------------------------------------------------\n"
 }
 
-func PlayersAsPhysObjSlice(ps map[int]Player) []PhysicalObject {
+func PlayersAsPhysObjSlice(ps map[int]*Player) []PhysicalObject {
 	physObjs := make([]PhysicalObject, len(ps))
 	n := 0
 	for _, p := range(ps) { 

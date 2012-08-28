@@ -25,8 +25,7 @@ func BuildPioneerRoom(p *mud.Player, direction string) {
 	var roomConn *mud.SimpleRoomConnection
 	newRoom := mud.NewBasicRoom(p.Universe,
 		0,
-		"A default room text.",
-		[]mud.PhysicalObject{})
+		"A default room text.")
 	switch direction {
 	case "east":
 		roomConn = mud.ConnectEastWest(p.Room(), newRoom)

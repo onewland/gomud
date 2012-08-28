@@ -13,11 +13,16 @@ type PerceiveTest func(p Player, s Stimulus) bool
 
 var PlayerPerceptions map[string]PerceiveTest
 
+type playerPersister struct {
+	Persister
+	player *Player
+}
+
 type Player struct {
 	Talker
 	Perceiver
 	PhysicalObject
-	Persister
+	saveLoader *playerPersister
 	Conn *UserConnection
 	id int
 	room *Room
@@ -44,7 +49,7 @@ func CreateOrLoadPlayer(u *Universe, name string) *Player {
 		Log("Creating player",name)
 		p = MakePlayer(u, name)
 		p.money = 5000
-		p.Save()
+		p.saveLoader.Save()
 	}
 	return p
 }
@@ -57,8 +62,10 @@ func MakePlayer(u *Universe, name string) *Player {
 	p.commandDone = make(chan bool, 1)
 	p.stimuli = make(chan Stimulus, 5)
 	p.inventory = make([]PhysicalObject, 10)
+	p.saveLoader = new(playerPersister)
+	p.saveLoader.player = p
 	p.Universe = u
-	u.Persistents = append(u.Persistents, p)
+	u.Persistents = append(u.Persistents, p.saveLoader)
 	return p
 }
 
@@ -74,22 +81,22 @@ func LoadPlayer(u *Universe, name string) *Player {
 	return p
 }
 
-func (p *Player) PersistentValues() map[string]interface{} {
+func (p *playerPersister) PersistentValues() map[string]interface{} {
 	vals := make(map[string]interface{})
-	if(p.id > 0) {
-		vals["id"] = strconv.Itoa(p.id)
+	if(p.player.id > 0) {
+		vals["id"] = strconv.Itoa(p.player.id)
 	}
-	vals["name"] = p.name
-	vals["money"] = strconv.Itoa(int(p.money))
+	vals["name"] = p.player.name
+	vals["money"] = strconv.Itoa(int(p.player.money))
 	return vals
 }
 
-func (p *Player) Save() string {
-	outID := p.Universe.Store.SaveStructure("player",p.PersistentValues())
-	if(p.id == 0) {
-		p.id, _ = strconv.Atoi(outID)
-		p.Universe.Store.RedisSet(
-			FieldJoin(":","player","byName",p.name),
+func (p *playerPersister) Save() string {
+	outID := p.player.Universe.Store.SaveStructure("player",p.PersistentValues())
+	if(p.player.id == 0) {
+		p.player.id, _ = strconv.Atoi(outID)
+		p.player.Universe.Store.RedisSet(
+			FieldJoin(":","player","byName",p.player.name),
 			outID)	
 	}
 	return outID
@@ -138,11 +145,13 @@ func PlacePlayerInRoom(r *Room, p *Player) {
 		RemovePlayerFromRoom(oldRoom, p)
 	}
 	
-	p.room = r
 	r.stimuliBroadcast <- PlayerEnterStimulus{player: p}
-	r.AddPerceiver(p)
-	r.players[p.id] = *p
+	r.AddChild(p)
+	r.players[p.id] = p
 }
+
+func (p *Player) SetRoom(r *Room) { p.room = r }
+//func (p *Player) Room() *Room { return p.room }
 
 func (p Player) Visible() bool { return true }
 func (p Player) Description() string { return "A person: " + p.name }
@@ -156,9 +165,9 @@ func (p *Player) TakeObject(o *PhysicalObject, r *Room) bool {
 		if(slot == nil) {
 			(*o).SetRoom(nil)
 			p.inventory[idx] = *o
-			for idx, obj := range(r.physObjects) {
+			for _, obj := range(r.PhysicalObjects()) {
 				if(*o == obj) {
-					r.physObjects[idx] = nil
+					r.RemoveChild(obj)
 					break
 				}
 			}
@@ -353,7 +362,7 @@ func (p Player) PerceiveList(context PerceiveContext) PerceiveMap {
 	physObjects := make(PerceiveMap)
 	room := p.room
 	people := room.players
-	roomObjects := room.physObjects
+	roomObjects := room.PhysicalObjects()
 	invObjects := p.inventory
 
 	targetList = []PhysicalObject{}

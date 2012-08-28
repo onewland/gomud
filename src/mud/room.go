@@ -7,6 +7,16 @@ func init() {
 	PersistentKeys["roomConnect"] = []string{ 
 		"id", "aExitName", 
 		"bExitName", "roomAId", "roomBId" }
+
+	containerHelper := new(FlexObjHandlerPair)
+	containerHelper.Add = func(fc *FlexContainer, o interface{}) {
+		ifIsPhysical(o, func(p PhysicalObject) {
+			r := fc.Meta["Room"].(*Room)
+			p.SetRoom(r)
+		})
+	}
+	containerHelper.Remove = func(*FlexContainer, interface{}) {}
+	FlexObjHandlers["RoomPhysicalObjects"] = *containerHelper
 }
 
 type RoomID int
@@ -30,11 +40,8 @@ type Room struct {
 	CommandSource
 	id int
 	text string
-	players map[int]Player
-	perceivers []Perceiver
-	Persistents []Persister
-	physObjects []PhysicalObject
-	CommandSources []CommandSource
+	players map[int]*Player
+	children *FlexContainer
 	exits []RoomExitInfo
 	stimuliBroadcast chan Stimulus
 	interactionQueue chan InterObjectAction
@@ -137,10 +144,14 @@ func (r *Room) ActionQueue() {
 	}
 }
 
+func (r *Room) Perceivers() []Perceiver {
+	return castAsPerceivers(r.children.AllObjects["Perceivers"])
+}
+
 func (r *Room) FanOutBroadcasts() {
 	for {
 		broadcast := <- r.stimuliBroadcast
-		for _,p := range r.perceivers { 
+		for _,p := range r.Perceivers() { 
 			//Log("fanning broadcast to ",p)
 			p.StimuliChannel() <- broadcast 
 		}
@@ -178,7 +189,7 @@ func (r *Room) Describe(toPlayer *Player) string {
 
 func (r *Room) DescribeObjects(toPlayer *Player) string {
 	objTextBuf := "Sitting here is/are:\n"
-	for _,obj := range r.physObjects {
+	for _,obj := range r.PhysicalObjects() {
 		if obj != nil && obj.Visible() {
 			objTextBuf += obj.Description()
 			objTextBuf += "\n"
@@ -202,105 +213,11 @@ func (r *Room) DescribePlayers(toPlayer *Player) string {
 }
 
 func (r *Room) AddChild(o interface{}) {
-	oAsPhysObj, isPhysical := o.(PhysicalObject)
-	oAsPersist, persists := o.(Persister)
-	oAsPerceiver, perceives := o.(Perceiver)
-	oAsCmdSrc, hasCommands := o.(CommandSource)
-	
-	if(isPhysical) { r.AddPhysObj(oAsPhysObj) }
-	if(persists) { r.AddPersistent(oAsPersist) }
-	if(perceives) { r.AddPerceiver(oAsPerceiver) }
-	if(hasCommands) { r.AddCommandSource(oAsCmdSrc) }
+	r.children.Add(o)
 }
 
 func (r *Room) RemoveChild(o interface{}) {
-	oAsPhysObj, isPhysical := o.(PhysicalObject)
-	oAsPersist, persists := o.(Persister)
-	oAsPerceiver, perceives := o.(Perceiver)
-	
-	if(isPhysical) { r.RemovePhysObj(oAsPhysObj) }
-	if(persists) { r.RemovePersistent(oAsPersist) }
-	if(perceives) { r.RemovePerceiver(oAsPerceiver) }
-}
-
-func (r *Room) AddPhysObj(p PhysicalObject) {
-	r.physObjects = append(r.physObjects, p)
-	p.SetRoom(r)
-}
-
-func (r *Room) RemovePhysObj(p PhysicalObject) {
-	for i,listP := range(r.physObjects) {
-		if p == listP {
-			if len(r.physObjects) > 1 {
-				physObjects := append(
-					r.physObjects[:i],
-					r.physObjects[i+1:]...)
-				r.physObjects = physObjects
-			} else {
-				r.physObjects = []PhysicalObject{}
-			}
-			Log("[rm] physical objects = ",r.physObjects)
-			break
-		}
-	}
-}
-
-func (r *Room) AddPerceiver(p Perceiver) {
-	r.perceivers = append(r.perceivers, p)
-}
-
-func (r *Room) RemovePerceiver(p Perceiver) {
-	for i,listP := range(r.perceivers) {
-		if p == listP {
-			if len(r.perceivers) > 1 {
-				perceivers := append(r.perceivers[:i],r.perceivers[i+1:]...)
-				r.perceivers = perceivers
-			} else {
-				r.perceivers = []Perceiver{}
-			}
-			Log("[rm] perceivers = ",r.perceivers)
-			break
-		}
-	}
-}
-
-func (r *Room) AddPersistent(p Persister) {
-	r.Persistents = append(r.Persistents, p)
-}
-
-func (r *Room) RemovePersistent(p Persister) {
-	for i,listP := range(r.Persistents) {
-		if p == listP {
-			if len(r.Persistents) > 1 {
-				perceivers := append(r.Persistents[:i],r.Persistents[i+1:]...)
-				r.Persistents = perceivers
-			} else {
-				r.Persistents = []Persister{}
-			}
-			Log("[rm] new Persistents = ",r.Persistents)
-			break
-		}
-	}
-}
-
-func (r *Room) AddCommandSource(p CommandSource) {
-	r.CommandSources = append(r.CommandSources, p)
-}
-
-func (r *Room) RemoveCommandSource(p CommandSource) {
-	for i,listP := range(r.CommandSources) {
-		if p == listP {
-			if len(r.CommandSources) > 1 {
-				commanders := append(r.CommandSources[:i],
-					r.CommandSources[i+1:]...)
-				r.CommandSources = commanders
-			} else {
-				r.CommandSources = []CommandSource{}
-			}
-			Log("[rm] new CommandSources = ",r.CommandSources)
-			break
-		}
-	}
+	r.children.Remove(o)
 }
 
 func (r *Room) Broadcast(s Stimulus) {
@@ -313,7 +230,8 @@ func (r *Room) PersistentValues() map[string]interface{} {
 		vals["id"] = strconv.Itoa(r.id)
 	}
 	vals["text"] = r.text
-	vals["persisters"] = r.Persistents
+	vals["persisters"] = castAsPersistents(
+		r.children.AllObjects["Persistents"])
 	return vals
 }
 
@@ -331,7 +249,7 @@ func LoadRoom(universe *Universe, id int) *Room {
 		FieldJoin(":","room",strconv.Itoa(id)))
 	Log("LoadRoom vals",vals)
 	if textStr, ok := vals["text"].(string); ok {
-		r := NewBasicRoom(universe, id, textStr, []PhysicalObject{})
+		r := NewBasicRoom(universe, id, textStr)
 		if persisterIds, ok := vals["persisters"].([]string); ok {
 			for _,pid := range(persisterIds) {
 				p := LoadArbitrary(universe, pid)
@@ -343,15 +261,19 @@ func LoadRoom(universe *Universe, id int) *Room {
 	return nil
 }
 
-func NewBasicRoom(universe *Universe, rid int, rtext string, physObjs []PhysicalObject) *Room {
+func NewBasicRoom(universe *Universe, rid int, rtext string) *Room {
 	r := Room{id: rid, text: rtext, universe: universe}
 	r.stimuliBroadcast = make(chan Stimulus, 10)
 	r.interactionQueue = make(chan InterObjectAction, 10)
-	r.players = make(map[int]Player)
-	r.perceivers = []Perceiver{}
-	r.Persistents = []Persister{}
-	r.physObjects = physObjs
+	r.players = make(map[int]*Player)
 	r.exits = []RoomExitInfo{}
+	r.children = MakeFlexContainer(
+		"PhysicalObjects", 
+		"Persistents", 
+		"RoomPhysicalObjects",
+		"Perceivers",
+		"CommandSources")
+	r.children.Meta["Room"] = &r
 	universe.Rooms[r.id] = &r
 	universe.Persistents = append(universe.Persistents, &r)
 
@@ -379,7 +301,7 @@ func (r *Room) Text() string { return r.text }
 type PhysObjReceiver func(p *PhysicalObject)
 
 func (r *Room) WithPhysObjects(handler PhysObjReceiver) {
-	for _,p := range(r.physObjects) { handler(&p) }
+	for _,p := range(r.PhysicalObjects()) { handler(&p) }
 }
 
 func (r *Room) ExitNames() string {
@@ -392,12 +314,44 @@ func (r *Room) ExitNames() string {
 
 func (r *Room) Actions() chan InterObjectAction { return r.interactionQueue }
 
+func (r *Room) CommandSources() []CommandSource {
+	return castCmdSources(r.children.AllObjects["CommandSources"])
+}
+
 func (r *Room) Commands() map[string]Command {
 	localCommands := make(map[string]Command)
-	for _, source := range(r.CommandSources) {
+	for _, source := range(r.CommandSources()) {
 		for commandName, command := range(source.Commands()) {
 			localCommands[commandName] = command
 		}
 	}
 	return localCommands
+}
+
+func castCmdSources(o []interface{}) []CommandSource {
+	pos := make([]CommandSource, len(o))
+	for i, x := range(o) { po := x.(CommandSource); pos[i] = po }
+	return pos
+}
+
+func castPhysicalObjects(o []interface{}) []PhysicalObject {
+	pos := make([]PhysicalObject, len(o))
+	for i, x := range(o) { po := x.(PhysicalObject); pos[i] = po }
+	return pos
+}
+
+func castAsPersistents(o []interface{}) []Persister {
+	pos := make([]Persister, len(o))
+	for i, x := range(o) { po := x.(Persister); pos[i] = po }
+	return pos
+}
+
+func castAsPerceivers(o []interface{}) []Perceiver {
+	pos := make([]Perceiver, len(o))
+	for i, x := range(o) { po := x.(Perceiver); pos[i] = po }
+	return pos
+}
+
+func (r *Room) PhysicalObjects() []PhysicalObject {
+	return castPhysicalObjects(r.children.AllObjects["PhysicalObjects"])
 }

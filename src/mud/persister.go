@@ -10,9 +10,28 @@ var Loaders map[string]Loader
 // Map of [type name] -> [field names that persist]
 var PersistentKeys map[string][]string
 
+func ifPersists(o interface{}, ifTrue func(Persister)) {
+	oAsPersister, persists := o.(Persister)
+	
+	if(persists) { ifTrue(oAsPersister) }
+}
+
 func init() {
 	PersistentKeys = make(map[string][]string)
 	Loaders = make(map[string]Loader)
+
+	containerHelper := new(FlexObjHandlerPair) 
+	containerHelper.Add = func(fc *FlexContainer, o interface{}) {
+		ifPersists(o, func(Persister) {
+			fc.AddObjToCategory("Persistents",o)
+		})
+	}
+	containerHelper.Remove = func(fc *FlexContainer, o interface{}) {
+		ifPersists(o, func(Persister) {
+			fc.RemoveObjFromCategory("Persistents",o)
+		})
+	}
+	FlexObjHandlers["Persistents"] = *containerHelper
 }
 
 type Persister interface {

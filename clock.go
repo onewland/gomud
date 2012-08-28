@@ -6,9 +6,13 @@ import ("mud"
 type HeartbeatClock struct { 
 	mud.PhysicalObject
 	mud.TimeListener
+	room *mud.Room
 	counter int
 	tPing chan int
 }
+
+func (c *HeartbeatClock) SetRoom(r *mud.Room) { c.room = r }
+func (c HeartbeatClock) Room() *mud.Room { return c.room }
 
 func (c HeartbeatClock) Visible() bool { return true }
 func (c HeartbeatClock) Carryable() bool { return false }

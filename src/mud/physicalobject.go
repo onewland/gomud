@@ -9,6 +9,27 @@ type PhysicalObject interface {
 	Room() *Room
 }
 
+func ifIsPhysical(o interface{}, ifTrue func(PhysicalObject)) {
+	oAsPhysical, isPhysical := o.(PhysicalObject)
+	
+	if(isPhysical) { ifTrue(oAsPhysical) }
+}
+
+func init() {
+	containerHelper := new(FlexObjHandlerPair)
+	containerHelper.Add = func(fc *FlexContainer, o interface{}) {
+		ifIsPhysical(o, func(PhysicalObject) {
+			fc.AddObjToCategory("PhysicalObjects",o)
+		})
+	}
+	containerHelper.Remove = func(fc *FlexContainer, o interface{}) {
+		ifIsPhysical(o, func(PhysicalObject) {
+			fc.RemoveObjFromCategory("PhysicalObjects",o)
+		})
+	}
+	FlexObjHandlers["PhysicalObjects"] = *containerHelper
+}
+
 type VanishAction struct {
 	InterObjectAction
 	Target PhysicalObject
