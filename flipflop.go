@@ -10,26 +10,13 @@ func init() {
 	mud.PersistentKeys["flipFlop"] = []string{ "id", "bling" }
 }
 
-type FlipFlop struct {
-	mud.NPC
+type flipFlopPersister struct {
 	mud.Persister
-	room *mud.Room
+	npc *SimpleNPC
 	universe *mud.Universe
-	stimuli chan mud.Stimulus
-	id int
-	lastText string
 }
 
-func (f FlipFlop) ID() int { return f.id }
-func (f FlipFlop) Name() string { return f.lastText }
-// Only respond to Talk stimulus to copy them
-func (f FlipFlop) DoesPerceive(s mud.Stimulus) bool {
-	mud.Log("DoesPerceive entered");
-	_, isSay := s.(mud.TalkerSayStimulus)
-	return isSay
-}
-func (f FlipFlop) TextHandles() []string { return []string{} }
-func (f *FlipFlop) HandleStimulus(s mud.Stimulus) {
+func ffHandleSay(s mud.Stimulus, n *SimpleNPC) {
 	scast, ok := s.(mud.TalkerSayStimulus)
 	if !ok {
 		panic("FF should only receive TalkerSayStimulus")
@@ -39,53 +26,57 @@ func (f *FlipFlop) HandleStimulus(s mud.Stimulus) {
 		if(args[0] == "bling") {
 			switch(args[1]) {
 			case "set":
-				f.lastText = args[2]
+				n.Meta["lastText"] = args[2]
+				n.description = n.Meta["lastText"].(string)
 			}
 		}
 	}
 }
-func (f FlipFlop) StimuliChannel() chan mud.Stimulus {
-	return f.stimuli
-}
-func (f FlipFlop) Visible() bool { return true }
-func (f FlipFlop) Description() string { return f.Name() }
-func (f FlipFlop) Carryable() bool { return false }
-func (f FlipFlop) PersistentValues() map[string]interface{} {
+
+func (f flipFlopPersister) PersistentValues() map[string]interface{} {
 	vals := make(map[string]interface{})
-	if(f.ID() > 0) {
-		vals["id"] = strconv.Itoa(f.ID())
+	if(f.npc.ID() > 0) {
+		vals["id"] = strconv.Itoa(f.npc.ID())
 	}
-	vals["bling"] = f.lastText
+	vals["bling"] = f.npc.Meta["lastText"]
 	return vals
 }
-func (f FlipFlop) SetRoom(r *mud.Room) { f.room = r }
-func (f FlipFlop) Room() *mud.Room { return f.room }
-
-func (f *FlipFlop) Save() string {
-	outID := f.universe.Store.SaveStructure("flipFlop",f.PersistentValues())	
-	if(f.id == 0) {
-		f.id, _ = strconv.Atoi(outID)
+func (f *flipFlopPersister) Save() string {
+	outID := f.universe.Store.SaveStructure("flipFlop",f.PersistentValues())
+	if(f.npc.id == 0) {
+		f.npc.id, _ = strconv.Atoi(outID)
 	}
 	return outID
 }
 
-func (f *FlipFlop) DBFullName() string {
-	return fmt.Sprintf("flipFlop:%d", f.id)
+func (f *flipFlopPersister) DBFullName() string {
+	return fmt.Sprintf("flipFlop:%d", f.npc.id)
 }
 
-func MakeFlipFlop(u *mud.Universe) *FlipFlop {
-	ff := new(FlipFlop)
+func MakeFlipFlop(u *mud.Universe) *SimpleNPC {
+	ff := MakeSimpleNPC(u)
+	persister := new(flipFlopPersister)
+
+	persister.npc = ff
+	persister.universe = u
+
 	ff.universe = u
-	ff.lastText = "Unchanged."
-	ff.stimuli = make(chan mud.Stimulus, 5)
+	ff.AddStimHandler("say", ffHandleSay)
+	ff.Meta["lastText"] = "Unchanged."
+	ff.description = ff.Meta["lastText"].(string)
+	ff.visible = true
+
 	u.Add(ff)
+	u.Add(persister)
+
 	go mud.StimuliLoop(ff)
+
 	return ff
 }
 
 func BuildFFInRoom(u *mud.Universe, p *mud.Player, args []string) {
 	ff := MakeFlipFlop(u)
-	ff.lastText = strings.Join(args, " ")
+	ff.Meta["lastText"] = strings.Join(args, " ")
 	room := p.Room()
 	room.AddChild(ff)
 }
@@ -96,7 +87,8 @@ func LoadFlipFlop(u *mud.Universe, id int) interface{} {
 		mud.FieldJoin(":","flipFlop",strconv.Itoa(id)))
 	ff := MakeFlipFlop(u)
 	ff.id = id
-	ff.lastText, ok = vals["bling"].(string)
+	ff.Meta["lastText"], ok = vals["bling"].(string)
+	ff.description = ff.Meta["lastText"].(string)
 	if !ok { panic("flipFlop:bling not string") }
 	return ff
 }
