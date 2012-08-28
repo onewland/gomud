@@ -11,9 +11,6 @@ var (
 	FlexObjHandlers = make(map[string]FlexObjHandlerPair)
 )
 
-func init() {
-}
-
 /*
  * FlexContainer sorts objects into separate lists,
  * which are stored in a map, using custom FlexObjHandler 
