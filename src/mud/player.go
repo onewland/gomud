@@ -12,6 +12,7 @@ type Currency int
 type PerceiveTest func(p Player, s Stimulus) bool
 
 var PlayerPerceptions map[string]PerceiveTest
+const MAX_INVENTORY = 10
 
 type playerPersister struct {
 	Persister
@@ -27,13 +28,17 @@ type Player struct {
 	id int
 	room *Room
 	name string
-	inventory []PhysicalObject
+	inventory *FlexContainer
 	money Currency
 	Universe *Universe
 	commandBuf chan string
 	stimuli chan Stimulus
 	quitting chan bool
 	commandDone chan bool
+}
+
+func (p *Player) Inventory() []PhysicalObject {
+	return castPhysicalObjects(p.inventory.AllObjects["PhysicalObjects"])
 }
 
 func PlayerExists(u *Universe, name string) (bool, error) {
@@ -61,7 +66,7 @@ func MakePlayer(u *Universe, name string) *Player {
 	p.commandBuf = make(chan string, 10)
 	p.commandDone = make(chan bool, 1)
 	p.stimuli = make(chan Stimulus, 5)
-	p.inventory = make([]PhysicalObject, 10)
+	p.inventory = MakeFlexContainer("PhysicalObjects")
 	p.saveLoader = new(playerPersister)
 	p.saveLoader.player = p
 	p.Universe = u
@@ -156,37 +161,30 @@ func (p *Player) SetRoom(r *Room) { p.room = r }
 func (p Player) Visible() bool { return true }
 func (p Player) Description() string { return "A person: " + p.name }
 func (p Player) Carryable() bool { return false }
-func (p Player) TextHandles() []string { 
-	return []string{ strings.ToLower(p.name) } 
+func (p Player) TextHandles() []string {
+	return []string{ strings.ToLower(p.name) }
+}
+
+func (p *Player) Add(o interface{}) {
+	p.inventory.Add(o)
 }
 
 func (p *Player) TakeObject(o *PhysicalObject, r *Room) bool {
-	for idx, slot := range(p.inventory) {
-		if(slot == nil) {
-			(*o).SetRoom(nil)
-			p.inventory[idx] = *o
-			for _, obj := range(r.PhysicalObjects()) {
-				if(*o == obj) {
-					r.RemoveChild(obj)
-					break
-				}
-			}
-			return true
-		}
+	if len(p.Inventory()) < MAX_INVENTORY {
+		r.RemoveChild(*o)
+		p.Add(*o)
+		return true
 	}
+
 	return false
 }
 
 func (p *Player) DropObject(o *PhysicalObject, r *Room) bool {
 	Log("Dropping", o, "to", r)
-	for idx, slot := range(p.inventory) {
-		if(slot == *o) {
-			r.AddChild(*o)
-			p.inventory[idx] = nil
-			return true
-		}
-	}
-	return false
+	p.inventory.Remove(*o)
+	r.AddChild(*o)
+
+	return true
 }
 
 func (p *Player) ExecCommandLoop() {
@@ -276,7 +274,7 @@ func Profit(p *Player, args []string) {
 func Inv(p *Player, args []string) {
 	p.WriteString(Divider())
 	p.WriteString("Inventory: \n")
-	for _, obj := range p.inventory {
+	for _, obj := range p.Inventory() {
 		if obj != nil {
 			p.WriteString(obj.Description())
 			p.WriteString("\n")
@@ -363,7 +361,7 @@ func (p Player) PerceiveList(context PerceiveContext) PerceiveMap {
 	room := p.room
 	people := room.players
 	roomObjects := room.PhysicalObjects()
-	invObjects := p.inventory
+	invObjects := p.Inventory()
 
 	targetList = []PhysicalObject{}
 
@@ -397,11 +395,10 @@ func (p *Player) AdjustMoney(amount Currency) {
 }
 
 func (p *Player) ReceiveObject(o *PhysicalObject) bool {
-	for idx, slot := range(p.inventory) {
-		if(slot == nil) {
-			p.inventory[idx] = *o
-			return true
-		}
+	if len(p.Inventory()) < MAX_INVENTORY {
+		p.Add(*o)
+		return true
 	}
+
 	return false
 }
