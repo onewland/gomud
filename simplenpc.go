@@ -10,6 +10,7 @@ type SimpleNPC struct {
 	mud.NPC
 	name string
 	room *mud.Room
+	localCommands map[string]mud.Command
 	universe *mud.Universe
 	stimuli chan mud.Stimulus
 	supportedStimuli map[string]SimpleStimulusHandler
@@ -49,9 +50,14 @@ func (n SimpleNPC) StimuliChannel() chan mud.Stimulus {
 	return n.stimuli 
 }
 
+func (npc *SimpleNPC) Commands() map[string]mud.Command {
+	return npc.localCommands
+}
+
 func MakeSimpleNPC(u *mud.Universe) *SimpleNPC {
 	npc := new(SimpleNPC)
 	npc.universe = u
+	npc.localCommands = make(map[string]mud.Command)
 	npc.supportedStimuli = make(map[string]SimpleStimulusHandler)
 	npc.stimuli = make(chan mud.Stimulus, 5)
 	npc.Meta = make(map[string]interface{})

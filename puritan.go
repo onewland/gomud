@@ -35,14 +35,9 @@ func MakePuritan(universe *mud.Universe) *SimpleNPC {
 	puritan.name = "Penelope Proper"
 	puritan.description = puritan.name
 	puritan.carryable = false
+	puritan.localCommands["buy"] = buy
 	go mud.StimuliLoop(puritan)
 	return puritan
-}
-
-func (p *SimpleNPC) Commands() map[string]mud.Command {
-	localCommands := make(map[string]mud.Command)
-	localCommands["buy"] = buy
-	return localCommands
 }
 
 type PurchaseAction struct {
