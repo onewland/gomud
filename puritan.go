@@ -1,6 +1,7 @@
 package main
 
 import ("mud"
+	"mud/simple"
 	"strings")
 
 func ContainsAny(s string, subs ...string) bool {
@@ -12,7 +13,7 @@ func ContainsAny(s string, subs ...string) bool {
 	return false
 }
 
-func puritanHandleSay(s mud.Stimulus, n *SimpleNPC) {
+func puritanHandleSay(s mud.Stimulus, n *simple.NPC) {
 	scast, ok := s.(mud.TalkerSayStimulus)
 	stim := mud.TalkerSay(n, "Wash your mouth out, " + scast.Source().Name())
 	if !ok {
@@ -28,14 +29,13 @@ func puritanHandleSay(s mud.Stimulus, n *SimpleNPC) {
 	}
 }
 
-func MakePuritan(universe *mud.Universe) *SimpleNPC {
-	puritan := MakeSimpleNPC(universe)
+func MakePuritan(universe *mud.Universe) *simple.NPC {
+	puritan := simple.MakeNPC(universe)
 	puritan.AddStimHandler("say", puritanHandleSay)
-	puritan.visible = true
-	puritan.name = "Penelope Proper"
-	puritan.description = puritan.name
-	puritan.carryable = false
-	puritan.localCommands["buy"] = buy
+	puritan.SetVisible(true)
+	puritan.SetDescription("Penelope Proper")
+	puritan.SetCarryable(false)
+	puritan.AddCommand("buy", buy)
 	go mud.StimuliLoop(puritan)
 	return puritan
 }

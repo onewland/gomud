@@ -16,7 +16,7 @@ func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 	room.AddChild(theClock)
 	room.AddChild(puritan)
 	room.AddChild(ff)
-	puritan.room = room
+	puritan.SetRoom(room)
 
 	room2 := mud.NewBasicRoom(universe, 0, "You are in a bathroom.")
 

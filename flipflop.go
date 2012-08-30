@@ -1,6 +1,7 @@
 package main
 
 import ("mud"
+	"mud/simple"
 	"strings"
 	"fmt"
 	"strconv")
@@ -12,11 +13,11 @@ func init() {
 
 type flipFlopPersister struct {
 	mud.Persister
-	npc *SimpleNPC
+	npc *simple.NPC
 	universe *mud.Universe
 }
 
-func ffHandleSay(s mud.Stimulus, n *SimpleNPC) {
+func ffHandleSay(s mud.Stimulus, n *simple.NPC) {
 	scast, ok := s.(mud.TalkerSayStimulus)
 	if !ok {
 		panic("FF should only receive TalkerSayStimulus")
@@ -27,7 +28,7 @@ func ffHandleSay(s mud.Stimulus, n *SimpleNPC) {
 			switch(args[1]) {
 			case "set":
 				n.Meta["lastText"] = args[2]
-				n.description = n.Meta["lastText"].(string)
+				n.SetDescription(n.Meta["lastText"].(string))
 			}
 		}
 	}
@@ -43,28 +44,29 @@ func (f flipFlopPersister) PersistentValues() map[string]interface{} {
 }
 func (f *flipFlopPersister) Save() string {
 	outID := f.universe.Store.SaveStructure("flipFlop",f.PersistentValues())
-	if(f.npc.id == 0) {
-		f.npc.id, _ = strconv.Atoi(outID)
+	if(f.npc.ID() == 0) {
+		id, _ := strconv.Atoi(outID)
+		f.npc.SetId(id)
 	}
 	return outID
 }
 
 func (f *flipFlopPersister) DBFullName() string {
-	return fmt.Sprintf("flipFlop:%d", f.npc.id)
+	return fmt.Sprintf("flipFlop:%d", f.npc.ID())
 }
 
-func MakeFlipFlop(u *mud.Universe) *SimpleNPC {
-	ff := MakeSimpleNPC(u)
+func MakeFlipFlop(u *mud.Universe) *simple.NPC {
+	ff := simple.MakeNPC(u)
 	persister := new(flipFlopPersister)
 
 	persister.npc = ff
 	persister.universe = u
 
-	ff.universe = u
+	ff.SetUniverse(u)
 	ff.AddStimHandler("say", ffHandleSay)
 	ff.Meta["lastText"] = "Unchanged."
-	ff.description = ff.Meta["lastText"].(string)
-	ff.visible = true
+	ff.SetDescription(ff.Meta["lastText"].(string))
+	ff.SetVisible(true)
 
 	u.Add(ff)
 	u.Add(persister)
@@ -86,9 +88,9 @@ func LoadFlipFlop(u *mud.Universe, id int) interface{} {
 	vals := u.Store.LoadStructure(mud.PersistentKeys["flipFlop"],
 		mud.FieldJoin(":","flipFlop",strconv.Itoa(id)))
 	ff := MakeFlipFlop(u)
-	ff.id = id
+	ff.SetId(id)
 	ff.Meta["lastText"], ok = vals["bling"].(string)
-	ff.description = ff.Meta["lastText"].(string)
+	ff.SetDescription(ff.Meta["lastText"].(string))
 	if !ok { panic("flipFlop:bling not string") }
 	return ff
 }
