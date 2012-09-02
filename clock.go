@@ -27,7 +27,7 @@ func (c *HeartbeatClock) UpdateTimeLoop() {
 	for { c.counter = <- c.tPing }
 }
 
-func MakeClock() *HeartbeatClock {
+func NewClock() *HeartbeatClock {
 	clock := new(HeartbeatClock)
 	clock.tPing = make(chan int)
 	go clock.UpdateTimeLoop()

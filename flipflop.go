@@ -55,8 +55,8 @@ func (f *flipFlopPersister) DBFullName() string {
 	return fmt.Sprintf("flipFlop:%d", f.npc.ID())
 }
 
-func MakeFlipFlop(u *mud.Universe) *simple.NPC {
-	ff := simple.MakeNPC(u)
+func NewFlipFlop(u *mud.Universe) *simple.NPC {
+	ff := simple.NewNPC(u)
 	persister := new(flipFlopPersister)
 
 	persister.npc = ff
@@ -77,7 +77,7 @@ func MakeFlipFlop(u *mud.Universe) *simple.NPC {
 }
 
 func BuildFFInRoom(u *mud.Universe, p *mud.Player, args []string) {
-	ff := MakeFlipFlop(u)
+	ff := NewFlipFlop(u)
 	ff.Meta["lastText"] = strings.Join(args, " ")
 	room := p.Room()
 	room.AddChild(ff)
@@ -87,7 +87,7 @@ func LoadFlipFlop(u *mud.Universe, id int) interface{} {
 	var ok bool
 	vals := u.Store.LoadStructure(mud.PersistentKeys["flipFlop"],
 		mud.FieldJoin(":","flipFlop",strconv.Itoa(id)))
-	ff := MakeFlipFlop(u)
+	ff := NewFlipFlop(u)
 	ff.SetId(id)
 	ff.Meta["lastText"], ok = vals["bling"].(string)
 	ff.SetDescription(ff.Meta["lastText"].(string))

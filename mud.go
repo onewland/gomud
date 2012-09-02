@@ -50,7 +50,7 @@ func main() {
 
 	rand.Seed(time.Now().Unix())
 	listener, err := net.Listen("tcp", ":3000")
-	universe := mud.NewBasicUniverse()
+	universe := mud.NewUniverse()
 	universe.Maker = BuildFFInRoom
 	playerRemoveChan := make(chan *mud.Player)
 	idGen := UniqueIDGen()
@@ -84,7 +84,7 @@ func main() {
 				namePrompt.PlayerIdSource = idGen
 				namePrompt.StartRoom = theRoom
 				namePrompt.PlayerRemoveChan = playerRemoveChan
-				mud.MakeUserConnection(conn, namePrompt)
+				mud.NewUserConnection(conn, namePrompt)
 			} else {
 				mud.Log("Error in accept")
 				mud.Log(aerr)

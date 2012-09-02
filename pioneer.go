@@ -1,7 +1,6 @@
 package main
 
-import ("mud"
-	"strings")
+import ("mud"; "strings")
 
 func init() {
 	mud.GlobalCommands["pioneer"] = Pioneer
@@ -23,7 +22,7 @@ func Pioneer(p *mud.Player, args[] string) {
 
 func BuildPioneerRoom(p *mud.Player, direction string) {
 	var roomConn *mud.SimpleRoomConnection
-	newRoom := mud.NewBasicRoom(p.Universe,
+	newRoom := mud.NewRoom(p.Universe,
 		0,
 		"A default room text.")
 	switch direction {

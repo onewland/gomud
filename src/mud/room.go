@@ -249,7 +249,7 @@ func LoadRoom(universe *Universe, id int) *Room {
 		FieldJoin(":","room",strconv.Itoa(id)))
 	Log("LoadRoom vals",vals)
 	if textStr, ok := vals["text"].(string); ok {
-		r := NewBasicRoom(universe, id, textStr)
+		r := NewRoom(universe, id, textStr)
 		if persisterIds, ok := vals["persisters"].([]string); ok {
 			for _,pid := range(persisterIds) {
 				p := LoadArbitrary(universe, pid)
@@ -261,13 +261,13 @@ func LoadRoom(universe *Universe, id int) *Room {
 	return nil
 }
 
-func NewBasicRoom(universe *Universe, rid int, rtext string) *Room {
+func NewRoom(universe *Universe, rid int, rtext string) *Room {
 	r := Room{id: rid, text: rtext, universe: universe}
 	r.stimuliBroadcast = make(chan Stimulus, 10)
 	r.interactionQueue = make(chan InterObjectAction, 10)
 	r.players = make(map[int]*Player)
 	r.exits = []RoomExitInfo{}
-	r.children = MakeFlexContainer(
+	r.children = NewFlexContainer(
 		"PhysicalObjects",
 		"Persistents",
 		"RoomPhysicalObjects",

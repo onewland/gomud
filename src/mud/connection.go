@@ -47,7 +47,7 @@ func init() {
 	colorMap["&;"] = "\x1b[0m"
 }
 
-func MakeUserConnection(socket net.Conn, connectState ConnectionState) *UserConnection {
+func NewUserConnection(socket net.Conn, connectState ConnectionState) *UserConnection {
 	c := new(UserConnection)
 	c.socket = socket
 	c.State = connectState

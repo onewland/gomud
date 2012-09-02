@@ -52,21 +52,21 @@ func CreateOrLoadPlayer(u *Universe, name string) *Player {
 		p = LoadPlayer(u, name)
 	} else {
 		Log("Creating player",name)
-		p = MakePlayer(u, name)
+		p = NewPlayer(u, name)
 		p.money = 5000
 		p.saveLoader.Save()
 	}
 	return p
 }
 
-func MakePlayer(u *Universe, name string) *Player {
+func NewPlayer(u *Universe, name string) *Player {
 	p := new(Player)
 	p.name = name
 	p.quitting = make(chan bool, 1)
 	p.commandBuf = make(chan string, 10)
 	p.commandDone = make(chan bool, 1)
 	p.stimuli = make(chan Stimulus, 5)
-	p.inventory = MakeFlexContainer("PhysicalObjects")
+	p.inventory = NewFlexContainer("PhysicalObjects")
 	p.saveLoader = new(playerPersister)
 	p.saveLoader.player = p
 	p.Universe = u
@@ -75,7 +75,7 @@ func MakePlayer(u *Universe, name string) *Player {
 }
 
 func LoadPlayer(u *Universe, name string) *Player {
-	p := MakePlayer(u, name)
+	p := NewPlayer(u, name)
 	playerId, _ := u.Store.RedisGet(FieldJoin(":","player","byName",name))
 	vals := u.Store.LoadStructure(PersistentKeys["player"],
 		FieldJoin(":","player",playerId))
@@ -126,11 +126,11 @@ func init() {
 	GlobalCommands["profit"] = Profit
 	
 	PlayerPerceptions = make(map[string]PerceiveTest)
-	PlayerPerceptions["enter"] = DoesPerceiveEnter
-	PlayerPerceptions["exit"] = DoesPerceiveExit
-	PlayerPerceptions["say"] = DoesPerceiveSay
-	PlayerPerceptions["take"] = DoesPerceiveTake
-	PlayerPerceptions["drop"] = DoesPerceiveDrop
+	PlayerPerceptions["enter"] = doesPerceiveEnter
+	PlayerPerceptions["exit"] = doesPerceiveExit
+	PlayerPerceptions["say"] = doesPerceiveSay
+	PlayerPerceptions["take"] = doesPerceiveTake
+	PlayerPerceptions["drop"] = doesPerceiveDrop
 }
 
 func (p Player) Room() *Room {
@@ -337,21 +337,21 @@ func (p Player) DoesPerceive(s Stimulus) bool {
 	return perceptTest(p, s)
 }
 
-func DoesPerceiveEnter(p Player, s Stimulus) bool {
+func doesPerceiveEnter(p Player, s Stimulus) bool {
 	sEnter, ok := s.(PlayerEnterStimulus)
 	if !ok { panic("Bad input to DoesPerceiveEnter") }
 	return !(sEnter.player.id == p.id)
 }
 
-func DoesPerceiveExit(p Player, s Stimulus) bool {
+func doesPerceiveExit(p Player, s Stimulus) bool {
 	sExit, ok := s.(PlayerLeaveStimulus)
 	if !ok { panic("Bad input to DoesPerceiveExit") }
 	return !(sExit.player.id == p.id)
 }
 
-func DoesPerceiveSay(p Player, s Stimulus) bool { return true }
-func DoesPerceiveTake(p Player, s Stimulus) bool { return true }
-func DoesPerceiveDrop(p Player, s Stimulus) bool { return true }
+func doesPerceiveSay(p Player, s Stimulus) bool { return true }
+func doesPerceiveTake(p Player, s Stimulus) bool { return true }
+func doesPerceiveDrop(p Player, s Stimulus) bool { return true }
 
 func (p Player) PerceiveList(context PerceiveContext) PerceiveMap {
 	// Right now, perceive people in the room, objects in the room,

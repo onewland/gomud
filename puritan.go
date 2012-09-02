@@ -29,8 +29,8 @@ func puritanHandleSay(s mud.Stimulus, n *simple.NPC) {
 	}
 }
 
-func MakePuritan(universe *mud.Universe) *simple.NPC {
-	puritan := simple.MakeNPC(universe)
+func NewPuritan(universe *mud.Universe) *simple.NPC {
+	puritan := simple.NewNPC(universe)
 	puritan.AddStimHandler("say", puritanHandleSay)
 	puritan.SetVisible(true)
 	puritan.SetDescription("Penelope Proper")

@@ -1,9 +1,14 @@
+// simple provides basic implementations for interfaces used in
+// package mud.
 package simple
 
 import "mud"
 
 type SimpleStimulusHandler func(mud.Stimulus, *NPC)
 
+/*
+ Simple, flexible implementation of NPCs
+ */
 type NPC struct {
 	mud.CommandSource
 	mud.Talker
@@ -63,7 +68,7 @@ func (npc *NPC) Commands() map[string]mud.Command {
 	return npc.localCommands
 }
 
-func MakeNPC(u *mud.Universe) *NPC {
+func NewNPC(u *mud.Universe) *NPC {
 	npc := new(NPC)
 	npc.universe = u
 	npc.localCommands = make(map[string]mud.Command)

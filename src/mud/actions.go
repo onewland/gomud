@@ -7,10 +7,10 @@ type PlayerTakeAction struct {
 	userTargetIdent string
 }
 
-func NoSpaceMsg(name string) string {
+func noSpaceMsg(name string) string {
 	return "No space in your inventory for " + name + ".\n"
 }
-func NoCarryMsg(name string) string {
+func noCarryMsg(name string) string {
 	return name + " cannot be carried.\n"
 }
 
@@ -29,10 +29,10 @@ func (p PlayerTakeAction) Exec() {
 			if player.TakeObject(&target, room) {
 				room.stimuliBroadcast <- stim
 			} else {
-				player.WriteString(NoSpaceMsg(p.userTargetIdent))
+				player.WriteString(noSpaceMsg(p.userTargetIdent))
 			}
 		} else {
-			player.WriteString(NoCarryMsg(p.userTargetIdent))
+			player.WriteString(noCarryMsg(p.userTargetIdent))
 		}
 	} else {
 		player.WriteString(p.userTargetIdent + " not seen.\n")

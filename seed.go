@@ -4,21 +4,21 @@ import ("mud"
 	"strconv")
 
 func MakeStupidRooms(universe *mud.Universe) *mud.Room {
-	puritan := MakePuritan(universe)
+	puritan := NewPuritan(universe)
 	theBall := new(Ball)
-	theClock := MakeClock()
-	ff := MakeFlipFlop(universe)
+	theClock := NewClock()
+	ff := NewFlipFlop(universe)
 
 	universe.Add(theClock)
 
-	room := mud.NewBasicRoom(universe, 0, "You are in a bedroom.")
+	room := mud.NewRoom(universe, 0, "You are in a bedroom.")
 	room.AddChild(theBall)
 	room.AddChild(theClock)
 	room.AddChild(puritan)
 	room.AddChild(ff)
 	puritan.SetRoom(room)
 
-	room2 := mud.NewBasicRoom(universe, 0, "You are in a bathroom.")
+	room2 := mud.NewRoom(universe, 0, "You are in a bathroom.")
 
 	tree := MakeFruitTree(universe, "peach")
 	room2.AddChild(tree)

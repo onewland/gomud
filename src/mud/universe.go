@@ -14,11 +14,11 @@ type Universe struct {
 	dbConn redis.Client
 }
 
-func NewBasicUniverse() *Universe {
+func NewUniverse() *Universe {
 	u := new(Universe)
 	u.Players = make(map[int]*Player)
 	u.Rooms = make(map[int]*Room)
-	u.children = MakeFlexContainer("Persistents", "TimeListeners")
+	u.children = NewFlexContainer("Persistents", "TimeListeners")
 	spec := redis.DefaultSpec().Db(3)
 	client, err := redis.NewSynchClientWithSpec(spec)
 	if(err != nil) {
