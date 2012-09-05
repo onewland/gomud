@@ -41,6 +41,8 @@ func (n *NPC) SetUniverse(u *mud.Universe) { n.universe = u }
 func (n *NPC) SetRoom(r *mud.Room) { n.room = r }
 func (n *NPC) Room() *mud.Room { return n.room }
 
+func (n *NPC) TextHandles() []string { return n.textHandles }
+
 func (n *NPC) AddStimHandler(stimName string, handler SimpleStimulusHandler) {
 	mud.Log("AddStimHandler", stimName, handler)
 	n.supportedStimuli[stimName] = handler

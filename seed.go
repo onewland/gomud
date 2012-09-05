@@ -5,8 +5,8 @@ import ("mud"
 
 func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 	puritan := NewPuritan(universe)
-	theBall := new(Ball)
-	theClock := NewClock()
+	theBall := NewBall(universe, "&red;red&;")
+	theClock := NewClock(universe)
 	ff := NewFlipFlop(universe)
 
 	universe.Add(theClock)
