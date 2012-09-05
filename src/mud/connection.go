@@ -57,6 +57,12 @@ func init() {
 	colorMap["&;"] = "\x1b[0m"
 }
 
+/* 
+ Opens up a new UserConnection connected by socket in state connectState.
+
+ Initiates the read loop which will populate the user I/O (FromUser and 
+ ToUser channels)
+*/
 func NewUserConnection(socket net.Conn, connectState ConnectionState) *UserConnection {
 	c := new(UserConnection)
 	c.socket = socket
@@ -67,7 +73,7 @@ func NewUserConnection(socket net.Conn, connectState ConnectionState) *UserConne
 	c.outOfBand = true
 	c.Data = make(map[string]interface{})
 	
-	go c.ReadLoop()
+	go c.readLoop()
 	return c
 }
 
@@ -84,7 +90,7 @@ func (c *UserConnection) Write(text string) {
 	c.socket.Write([]byte(str_acc))
 }
 
-func (c *UserConnection) ReadLoop() {
+func (c *UserConnection) readLoop() {
 	rawBuf := make([]byte, 1024)
 	defer c.socket.Close()
 
