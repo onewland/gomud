@@ -14,9 +14,19 @@ type UserConnection struct {
 	Data map[string]interface{}
 }
 
+/* 
+ ConnectionState should be derived for state machine-type login processes.
+
+ It operates on the "out-of-band" console, used for logins or any connection
+ which isn't yet handled by a Player ExecCommandLoop.
+*/
 type ConnectionState interface {
 	Name() string
+	// Init gets called to set up any information in UserConnection
+	// required by respond
 	Init(*UserConnection)
+	// Respond is called on user input. If false is returned, the 
+	// connection leaves out of band mode.
 	Respond(*UserConnection) bool
 }
 
