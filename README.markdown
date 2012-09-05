@@ -8,6 +8,7 @@ physical entities, and persists to a Redis back-end.
 Add gomud/ to your `GOPATH` environment variable.
 
 Run `go install mud`.
+Run `go install mud/simple`.
 Run `go build` in the base directory of gomud.
 
 ## Usage
