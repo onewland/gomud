@@ -38,7 +38,7 @@ func (u *Universe) Persistents() []Persister {
 	return castAsPersistents(u.children.AllObjects["Persistents"])
 }
 
-func (u *Universe) PlayerFromUserConn(conn *UserConnection, idSource func() int) *Player {
+func (u *Universe) PlayerFromUserConn(conn *UserConnection) *Player {
 	name := conn.Data["playerName"].(string)
 	p := CreateOrLoadPlayer(u, name)
 	p.Conn = conn

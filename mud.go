@@ -12,7 +12,6 @@ type NamePrompt struct {
 	universe *mud.Universe
 	StartRoom *mud.Room
 	PlayerRemoveChan chan *mud.Player
-	PlayerIdSource func() int
 }
 
 func (n *NamePrompt) Name() string { return "name prompt" }
@@ -24,7 +23,7 @@ func (n *NamePrompt) Respond(c *mud.UserConnection) bool {
 	playerName := <- c.FromUser
 	c.Data["playerName"] = playerName
 
-	newP := n.universe.PlayerFromUserConn(c, n.PlayerIdSource)
+	newP := n.universe.PlayerFromUserConn(c)
 	mud.PlacePlayerInRoom(n.StartRoom, newP)
 	mud.Look(newP, []string{})
 	
@@ -53,7 +52,6 @@ func main() {
 	universe := mud.NewUniverse()
 	universe.Maker = BuildFFInRoom
 	playerRemoveChan := make(chan *mud.Player)
-	idGen := UniqueIDGen()
 
 	var theRoom *mud.Room
 	if(*flagUseSeed) {
@@ -81,7 +79,6 @@ func main() {
 			if aerr == nil {
 				namePrompt := new(NamePrompt)
 				namePrompt.universe = universe
-				namePrompt.PlayerIdSource = idGen
 				namePrompt.StartRoom = theRoom
 				namePrompt.PlayerRemoveChan = playerRemoveChan
 				mud.NewUserConnection(conn, namePrompt)
@@ -93,11 +90,4 @@ func main() {
 	} else {
 		mud.Log("Error in listen", err)
 	}
-}
-
-func UniqueIDGen() func() int {
-	x, xchan := 0, make(chan int)
-	go func() { for ; ; x += 1 { xchan <- x } }()
-
-	return func() int { return <- xchan }
 }
