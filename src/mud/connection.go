@@ -3,15 +3,24 @@ package mud
 import ("net"
 	"strings")
 
+/*
+ UserConnection is the wrapper class that ties a connection to a user
+ to a connection state and handles the I/O.
+ */
 type UserConnection struct {
+	// buffered channel which emits user input
+	FromUser chan string
+	// buffered channel which sends its input to user
+	ToUser chan string
+	// handler for disconnect
+	OnDisconnect func()
+	// current ConnectionState
+	State ConnectionState
+	// arbitrary data to attach to UserConnection
+	Data map[string]interface{}
 	socket net.Conn
 	outOfBand bool
 	done chan bool
-	FromUser chan string
-	ToUser chan string
-	OnDisconnect func()
-	State ConnectionState
-	Data map[string]interface{}
 }
 
 /* 
