@@ -104,7 +104,6 @@ func LoadRoomConn(universe *Universe, id int) *SimpleRoomConnection {
 	roomBId,_ := strconv.Atoi(roomBIdStr)
 	rc := conn(universe.Rooms[roomAId],universe.Rooms[roomBId])
 	rc.id = id
-	universe.Add(rc)
 	return rc
 }
 
@@ -119,6 +118,8 @@ func SimpleRoomConnectCreator(a string, b string) RoomConnCreator {
 var EastWestRoomConnection = SimpleRoomConnectCreator("east","west")
 var NorthSouthRoomConnection = SimpleRoomConnectCreator("north","south")
 var UpDownRoomConnection = SimpleRoomConnectCreator("up","down")
+var NEtoSWRoomConnection = SimpleRoomConnectCreator("northeast","southwest")
+var NWtoSERoomConnection = SimpleRoomConnectCreator("northwest","southeast")
 
 func ConnectWithConnCreator(exitGen RoomConnCreator) RoomConnector {
 	return func(a *Room, b *Room) *SimpleRoomConnection {
@@ -129,6 +130,7 @@ func ConnectWithConnCreator(exitGen RoomConnCreator) RoomConnector {
 		reiB := RoomExitInfo{exitSide: SideB, exit: roomConn}
 		a.exits = append(a.exits, reiA)
 		b.exits = append(b.exits, reiB)
+		a.universe.Add(roomConn)
 		return roomConn
 	}
 }
@@ -136,6 +138,8 @@ func ConnectWithConnCreator(exitGen RoomConnCreator) RoomConnector {
 var ConnectEastWest = ConnectWithConnCreator(EastWestRoomConnection)
 var ConnectNorthSouth = ConnectWithConnCreator(NorthSouthRoomConnection)
 var ConnectUpDown = ConnectWithConnCreator(UpDownRoomConnection)
+var ConnectNEtoSW = ConnectWithConnCreator(NEtoSWRoomConnection)
+var ConnectNWtoSE = ConnectWithConnCreator(NWtoSERoomConnection)
 
 func (r *Room) ActionQueue() {
 	for {
