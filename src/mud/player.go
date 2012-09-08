@@ -114,16 +114,16 @@ func (p Player) Name() string { return p.name }
 func (p Player) StimuliChannel() chan Stimulus { return p.stimuli }
 
 func init() {
-	GlobalCommands["who"] = Who
+	GlobalCommands["who"] = who
 	GlobalCommands["look"] = Look
-	GlobalCommands["say"] = Say
-	GlobalCommands["take"] = Take
-	GlobalCommands["drop"] = Drop
-	GlobalCommands["go"] = GoExit
-	GlobalCommands["inv"] = Inv
-	GlobalCommands["quit"] = Quit
-	GlobalCommands["make"] = Make
-	GlobalCommands["profit"] = Profit
+	GlobalCommands["say"] = say
+	GlobalCommands["take"] = take
+	GlobalCommands["drop"] = drop
+	GlobalCommands["go"] = goExit
+	GlobalCommands["inv"] = inv
+	GlobalCommands["quit"] = quit
+	GlobalCommands["make"] = mudMake
+	GlobalCommands["profit"] = profit
 	
 	PlayerPerceptions = make(map[string]PerceiveTest)
 	PlayerPerceptions["enter"] = doesPerceiveEnter
@@ -217,7 +217,7 @@ func Look(p *Player, args []string) {
 	}
 }
 
-func Who(p *Player, args []string) {
+func who(p *Player, args []string) {
 	gotOne := false
 	for id, pOther := range p.Universe.Players {
 		if id != p.id {
@@ -232,13 +232,13 @@ func Who(p *Player, args []string) {
 	}
 }
 
-func Say(p *Player, args []string) {
+func say(p *Player, args []string) {
 	room := p.room
 	sayStim := TalkerSayStimulus{talker: p, text: strings.Join(args," ")}
 	room.stimuliBroadcast <- sayStim
 }
 
-func Take(p *Player, args []string) {
+func take(p *Player, args []string) {
 	room := p.room
 	if len(args) > 0 {
 		target := strings.ToLower(args[0])
@@ -249,7 +249,7 @@ func Take(p *Player, args []string) {
 	}
 }
 
-func Drop(p *Player, args []string) {
+func drop(p *Player, args []string) {
 	room := p.room
 	if len(args) > 0 {
 		target := strings.ToLower(args[0])
@@ -260,7 +260,7 @@ func Drop(p *Player, args []string) {
 	}
 }
 
-func Profit(p *Player, args []string) {
+func profit(p *Player, args []string) {
 	Log("[WARNING] Profit command should not be in production")
 	if len(args) != 1 {
 		p.WriteString("Add money to your inventory with 'profit [amount]'.\n")
@@ -271,7 +271,7 @@ func Profit(p *Player, args []string) {
 	}
 }
 
-func Inv(p *Player, args []string) {
+func inv(p *Player, args []string) {
 	p.WriteString(Divider())
 	p.WriteString("Inventory: \n")
 	for _, obj := range p.Inventory() {
@@ -286,7 +286,7 @@ func Inv(p *Player, args []string) {
 	p.WriteString(Divider())
 }
 
-func GoExit(p *Player, args []string) {
+func goExit(p *Player, args []string) {
 	room := p.room
 	if(len(args) < 1) {
 		p.WriteString("Go usage: go [exit name]. Ex. go north")
@@ -301,11 +301,11 @@ func GoExit(p *Player, args []string) {
 	})
 }
 
-func Quit(p *Player, args[] string) {
+func quit(p *Player, args[] string) {
 	p.quitting <- true
 }
 
-func Make(p *Player, args[] string) {
+func mudMake(p *Player, args[] string) {
 	Log("[WARNING] Make command should not be in production")
 	p.Universe.Maker(p.Universe, p, args)
 }
