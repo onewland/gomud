@@ -67,11 +67,21 @@ func (f *FlexContainer) Remove(o interface{}) {
 	}
 }
 
+/* 
+ Add object to specific FlexContainer category. This
+ always performs an action and does not trigger handlers
+ (it is, in fact, used by handlers) 
+ */
 func (f *FlexContainer) AddObjToCategory(category string, o interface{}) {
 	f.AllObjects[category] = append(f.AllObjects[category], o)
 	Log("[add]",o,"to",category)
 }
 
+/* 
+ Remove object from specific FlexContainer category. This
+ always performs an action and does not trigger handlers
+ (it is, in fact, used by handlers) 
+*/
 func (f *FlexContainer) RemoveObjFromCategory(category string, o interface{}) {
 	for i,listO := range(f.AllObjects[category]) {
 		if o == listO {
@@ -88,12 +98,16 @@ func (f *FlexContainer) RemoveObjFromCategory(category string, o interface{}) {
 	}
 }
 
-func NewFlexContainer(handlers ...string) *FlexContainer {
-	fc := new(FlexContainer)
-	fc.AllObjects = make(map[string][]interface{})
+/* 
+ Creates a new FlexContainer with handlers defined by in
+ FlexObjHandlers by input strings 
+ */ 
+func NewFlexContainer(handlers ...string) *FlexContainer { 
+	fc := new(FlexContainer) 
+	fc.AllObjects = make(map[string][]interface{}) 
 	fc.Meta = make(map[string]interface{})
-	for _, handlerName := range(handlers) {
+	for _, handlerName := range(handlers) { 
 		fc.handlers = append(fc.handlers, FlexObjHandlers[handlerName])
-	}
-	return fc
+	} 
+	return fc 
 }
