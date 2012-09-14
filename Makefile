@@ -2,6 +2,8 @@ all:
 	go install mud
 	go install mud/simple
 	go build
+	go test mud
+	go test
 
 deploy:
 	rsync -avz  \

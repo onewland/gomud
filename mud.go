@@ -54,13 +54,13 @@ func main() {
 	playerRemoveChan := make(chan *mud.Player)
 
 	var theRoom *mud.Room
-	if(*flagUseSeed) {
+	if *flagUseSeed {
 		mud.Log("Seeding Universe")
 		universe.ClearDB()
-		theRoom = MakeStupidRooms(universe)
-	} else if(*flagUseLoad) {
+		theRoom = InitUniverse(universe)
+	} else if *flagUseLoad {
 		mud.Log("Loading Universe")
-		theRoom = LoadStupidRooms(universe)
+		theRoom = LoadUniverse(universe)
 		mud.Log("theRoom",theRoom)
 	}
 

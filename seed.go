@@ -3,7 +3,55 @@ package main
 import ("mud"
 	"strconv")
 
-func MakeStupidRooms(universe *mud.Universe) *mud.Room {
+func InitUniverse(universe *mud.Universe) *mud.Room {
+	townSquare := mud.NewRoom(universe, 0, 
+`Parallax Town Square.
+
+The social and geographic center of the town of Parallax. To the
+north is General Seed. The road headed east is Old Town Ave. The
+road headed south is Artery Rd.`)
+	universe.Add(townSquare)
+
+	oldAve1 := mud.NewRoom(universe, 0, 
+`Old Ave.
+
+Old Ave. runs east and west. To the west is town square. There is
+a shabby tenement house to the south.`)
+	universe.Add(oldAve1)
+	mud.ConnectEastWest(townSquare, oldAve1)
+
+	oldAve2 := mud.NewRoom(universe, 0, 
+`Old Ave.
+
+Old Ave. runs east and west. To the north is a grocer. To the south
+is a church.`)
+	universe.Add(oldAve2)
+	mud.ConnectEastWest(oldAve1, oldAve2)
+	
+	oldAve3 := mud.NewRoom(universe, 0,`
+Old Ave./Gold St. Intersection
+
+Old Ave. runs west. To the northeast is Gilroy Estate. 
+To the north is Gold Street.`)
+	universe.Add(oldAve3)
+	mud.ConnectEastWest(oldAve2, oldAve3)
+
+	gilroyEstate := mud.NewRoom(universe, 0,`
+Gilroy Estate
+
+You are at the entrance to Gilroy Estate. It is a mansion with sprawling
+grounds. The garden runs north and east. The foyer is northeast.
+`)
+	universe.Add(gilroyEstate)
+	mud.ConnectNEtoSW(oldAve3, gilroyEstate)
+
+	goldSt1 := mud.NewRoom(universe, 0,`
+Gold St.
+
+Gold Street runs south. There is a Patrician Foods to the northeast.`)
+	universe.Add(goldSt1)
+	mud.ConnectNorthSouth(goldSt1, oldAve3)
+
 	puritan := NewPuritan(universe)
 	theBall := NewBall(universe, "&red;red&;")
 	theClock := NewClock(universe)
@@ -24,13 +72,12 @@ func MakeStupidRooms(universe *mud.Universe) *mud.Room {
 	room2.AddChild(tree)
 	tree.room = room2
 
-	src := mud.ConnectEastWest(room, room2)
-	universe.Add(src)
+	mud.ConnectEastWest(room, room2)
 
-	return room
+	return townSquare
 }
 
-func LoadStupidRooms(universe *mud.Universe) *mud.Room {
+func LoadUniverse(universe *mud.Universe) *mud.Room {
 	roomIds := universe.Store.GlobalSetGet("rooms")
 	roomConnIds := universe.Store.GlobalSetGet("roomConnects")
 	for _, roomId := range(roomIds) {
