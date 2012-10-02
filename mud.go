@@ -5,7 +5,8 @@ import ("os"
 	"math/rand"
 	"time"
 	"flag"
-	"mud")
+	"mud"
+	"fmt")
 
 type NamePrompt struct {
 	mud.ConnectionState
@@ -35,6 +36,8 @@ func (n *NamePrompt) Respond(c *mud.UserConnection) bool {
 }
 
 func main() {
+	flagPort := flag.Int("port", 3000,
+		"port to listen for mud clients")
 	flagUseSeed := flag.Bool("seed", false, 
 		"flush DB and seed universe with prototype's seed.go")
 	flagUseLoad := flag.Bool("load", true, 
@@ -48,7 +51,7 @@ func main() {
 	mud.Log("program args: ", os.Args)
 
 	rand.Seed(time.Now().Unix())
-	listener, err := net.Listen("tcp", ":3000")
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d",*flagPort))
 	universe := mud.NewUniverse()
 	universe.Maker = BuildFFInRoom
 	playerRemoveChan := make(chan *mud.Player)
@@ -73,7 +76,7 @@ func main() {
 		go mud.PlayerListManager(playerRemoveChan, universe.Players)
 		defer listener.Close()
 
-		mud.Log("Listening on port 3000")
+		mud.Log("Listening on port", *flagPort)
 		for {
 			conn, aerr := listener.Accept()
 			if aerr == nil {
