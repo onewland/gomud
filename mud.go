@@ -44,6 +44,8 @@ func main() {
 		"load objects from DB")
 	flagSpeedupFactor := flag.Float64("speedup", 1.0,
 		"factor to speed up heartbeat loop (2.0 means heartbeats come twice as often)")
+	flagRedisDbNo := flag.Int("dbno", 3,
+		"redis DB# to load from/seed into")
 	flag.Usage = func() {
 		flag.PrintDefaults()
 	}
@@ -52,7 +54,7 @@ func main() {
 
 	rand.Seed(time.Now().Unix())
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d",*flagPort))
-	universe := mud.NewUniverse()
+	universe := mud.NewUniverse(*flagRedisDbNo)
 	universe.Maker = BuildFFInRoom
 	playerRemoveChan := make(chan *mud.Player)
 

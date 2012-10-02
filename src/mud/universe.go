@@ -14,12 +14,12 @@ type Universe struct {
 	dbConn redis.Client
 }
 
-func NewUniverse() *Universe {
+func NewUniverse(dbNo int) *Universe {
 	u := new(Universe)
 	u.Players = make(map[int]*Player)
 	u.Rooms = make(map[int]*Room)
 	u.children = NewFlexContainer("Persistents", "TimeListeners")
-	spec := redis.DefaultSpec().Db(3)
+	spec := redis.DefaultSpec().Db(dbNo)
 	client, err := redis.NewSynchClientWithSpec(spec)
 	if(err != nil) {
 		panic(err)
