@@ -11,9 +11,9 @@ Run `make`.
 
 Alternatively, if you do not have make installed:
 
-    `gomud:$ go install mud`.
-    `gomud:$ go install mud/simple`.
-    `gomud:$ go build`
+    gomud:$ go install mud
+    gomud:$ go install mud/simple
+    gomud:$ go build
 
 ## Usage
 On the first run, use `./gomud -seed`. This command flushes the
