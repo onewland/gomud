@@ -10,11 +10,10 @@ Add gomud/ to your `GOPATH` environment variable.
 Run `make`.
 
 Alternatively, if you do not have make installed:
-Run `go install mud`.
 
-Run `go install mud/simple`.
-
-Run `go build` in the base directory of gomud.
+    `gomud:$ go install mud`.
+    `gomud:$ go install mud/simple`.
+    `gomud:$ go build`
 
 ## Usage
 On the first run, use `./gomud -seed`. This command flushes the
@@ -33,15 +32,20 @@ Right now, the implementations of these concepts may not be philosophically
 correct as elements settle into place, but they should be mostly accurate.
 
 ### Universe
-A Universe is a collection of Rooms, PhysicalObjects, Players, and 
+A `Universe` is a collection of `Room`s, `PhysicalObject`s, `Player`s, and 
 any entities that would require interaction with each other. It is the dividing
 line between the game world and the technical housekeeping, in matters of 
 network and database connectivity.
 
+#### Connections and Players
+Every time a user telnets into `gomud`, a `Connection` structure is created. 
+When that player is authenticated, verified, or created, then an encapsulating
+`Player` structure gets added to the `Player` list.
+
 ### PhysicalObject(s)
 A PhysicalObject is an object that occupies space and exists at a particular
 geographic location. It can be visible or not, carryable or not. Importantly,
-all `Player`s are `PhysicalObject`s
+all `Player`s are `PhysicalObject`s.
 
 ### Persister 
 A Persister is an instance, of nature undefined, that has 
