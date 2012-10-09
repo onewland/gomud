@@ -7,18 +7,24 @@ physical entities, and persists to a Redis back-end.
 ## Build
 Add gomud/ to your `GOPATH` environment variable.
 
+Run `make`.
+
+Alternatively, if you do not have make installed:
 Run `go install mud`.
 Run `go install mud/simple`.
 Run `go build` in the base directory of gomud.
 
 ## Usage
-Redis must be running on a standard port and have at least 4 DBs. Right now,
-DB 3 is used and this is not configurable.
-
 On the first run, use `./gomud -seed`. This command flushes the
 database and then sets up defaults in "seed.go". From then on, a plain
 run of `./gomud` or `./gomud -load` will load the current state of
 entities from the database.
+
+The default Redis DB number is 3, but can be specified with `-dbno`.
+
+`gomud` is really a simple prototype for the `mud` package, which contains
+the "guts" of the application. For building a new mud, you may want to 
+completely rewrite the contents of `mud.go`.
 
 ## Concepts
 Right now, the implementations of these concepts may not be philosophically
@@ -37,7 +43,7 @@ all `Player`s are `PhysicalObject`s
 
 ### Persister 
 A Persister is an instance, of nature undefined, that has 
-extemporaneous/dynamic value saved to the database.
+extemporaneous/dynamic value or values saved to the database.
 
 ### Perceivers and Stimuli
 Perceivers react to the world and actions around them. Players are themselves
@@ -57,22 +63,27 @@ copies of the object being made if two players try to "take" at roughly the
 same time, for example. Combat actions are not yet implemeented but would be 
 an obvious case for the `InterObjectAction` queue.
 
+### Commands
+`Command`s can be global or room-specific. Non-global commands are provided by 
+`CommandSource` implementors. A `Command` is simply a function that inputs
+a player and string arguments.
+
 ## Extending 
-This section requires more explanation. When public, if
-you have a question, e-mail onewland@gmail.com
+Per-game additions should not go in the `src/mud`. directory. They should
+be in the base `gomud/` directory. Some "template" classes to make building
+custom NPCs and objects easier are located in `src/mud/simple`.
 
-Per-game additions should not go in the src/mud directory. They should
-be in the base gomud/ directory.
+Changes which affect the structure of the universe should go in src/mud.
 
-### FlipFlop 
-`FlipFlop` is an example class showing how to create a
+### FlipFlop
+`flipflop.go` is an example of how to create a
 persistent object that responds to the `PlayerSayStimulus` without
-modifying any internal (src/mud/) code. It responds to a person saying
+modifying any internal (`src/mud/`) code. It responds to a person saying
 "bling set [text]" by changing its description to `[text]`. This change
-is persisted in the field flipFlop:[id]:bling
+is persisted in the Redis field `flipFlop:[id]:bling`.
 
 ### HeartbeatClock
-`HeartbeatClock` is an example class showing how to create an object
+`clock.go` is an example showing how to create an object
 that is dependent on the Heartbeat function. `HeartbeatClock` does 
-not implement persistence functions, so it will load when seeded but
+not implement persistence functions, so it will load if seeded but
 not remain after a server restart.
