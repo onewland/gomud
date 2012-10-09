@@ -11,7 +11,9 @@ Run `make`.
 
 Alternatively, if you do not have make installed:
 Run `go install mud`.
+
 Run `go install mud/simple`.
+
 Run `go build` in the base directory of gomud.
 
 ## Usage
@@ -48,7 +50,8 @@ extemporaneous/dynamic value or values saved to the database.
 ### Perceivers and Stimuli
 Perceivers react to the world and actions around them. Players are themselves
 `Perceiver`s and things like speech and entry/exit are delegated by how they
-receive Stimuli. Stimuli can be custom-designed and generated
+receive Stimuli. Stimuli can be custom-designed and generated in `src/mud` or
+in `gomud`.
 
 ### Room
 Rooms contain PhysicalObjects, Persisters, and Perceivers and persist
@@ -66,7 +69,9 @@ an obvious case for the `InterObjectAction` queue.
 ### Commands
 `Command`s can be global or room-specific. Non-global commands are provided by 
 `CommandSource` implementors. A `Command` is simply a function that inputs
-a player and string arguments.
+a player and string arguments. One can add a command to the global commands
+by adding it to the `mud.GlobalCommands` hash (the string key is the command
+that the user types).
 
 ## Extending 
 Per-game additions should not go in the `src/mud`. directory. They should
