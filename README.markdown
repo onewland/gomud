@@ -28,9 +28,10 @@ the "guts" of the application. For building a new mud, you may want to
 completely rewrite the contents of `mud.go`.
 
 ## Connecting
-
 Unless `-port` is specified, you can connect to the mud with the command
 `telnet localhost 3000`.
+
+There is a running server (at the time of writing) at omud.us, port 3000.
 
 ## Concepts
 Right now, the implementations of these concepts may not be philosophically
